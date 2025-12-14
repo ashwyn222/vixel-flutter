@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vixel - Powerful Offline Video Editor</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        .hero {
+            text-align: center;
+            padding: 80px 20px;
+            color: white;
+        }
+        .hero h1 {
+            font-size: 72px;
+            font-weight: 300;
+            margin-bottom: 16px;
+            text-shadow: 0 4px 20px rgba(0,0,0,0.3);
+        }
+        .hero .tagline {
+            font-size: 24px;
+            opacity: 0.9;
+            margin-bottom: 40px;
+        }
+        .features {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 24px;
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 0 20px 60px;
+        }
+        .feature {
+            background: white;
+            border-radius: 16px;
+            padding: 32px;
+            text-align: center;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            transition: transform 0.3s ease;
+        }
+        .feature:hover {
+            transform: translateY(-5px);
+        }
+        .feature .icon {
+            font-size: 48px;
+            margin-bottom: 16px;
+        }
+        .feature h3 {
+            color: #333;
+            margin-bottom: 8px;
+        }
+        .feature p {
+            color: #666;
+            font-size: 14px;
+        }
+        .cta {
+            text-align: center;
+            padding: 40px 20px 80px;
+        }
+        .btn {
+            display: inline-block;
+            padding: 16px 48px;
+            background: white;
+            color: #667eea;
+            text-decoration: none;
+            border-radius: 50px;
+            font-weight: 600;
+            font-size: 18px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        .btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 15px 50px rgba(0,0,0,0.3);
+        }
+        .footer {
+            background: rgba(0,0,0,0.2);
+            padding: 24px;
+            text-align: center;
+        }
+        .footer a {
+            color: white;
+            text-decoration: none;
+            margin: 0 16px;
+            opacity: 0.8;
+        }
+        .footer a:hover {
+            opacity: 1;
+        }
+        .privacy-note {
+            background: rgba(255,255,255,0.15);
+            backdrop-filter: blur(10px);
+            border-radius: 12px;
+            padding: 24px;
+            max-width: 600px;
+            margin: 0 auto 40px;
+            color: white;
+        }
+        .privacy-note strong {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 18px;
+        }
+    </style>
+</head>
+<body>
+    <div class="hero">
+        <h1>Vixel</h1>
+        <p class="tagline">Powerful Offline Video Editor</p>
+        
+        <div class="privacy-note">
+            <strong>🔒 100% Privacy</strong>
+            All video processing happens locally on your device. Your videos never leave your phone.
+        </div>
+    </div>
+
+    <div class="features">
+        <div class="feature">
+            <div class="icon">🗜️</div>
+            <h3>Compress</h3>
+            <p>Reduce video file size with adjustable quality settings</p>
+        </div>
+        <div class="feature">
+            <div class="icon">✂️</div>
+            <h3>Cut</h3>
+            <p>Trim videos with precise start/end time selection</p>
+        </div>
+        <div class="feature">
+            <div class="icon">🔗</div>
+            <h3>Merge</h3>
+            <p>Combine multiple videos into one seamless file</p>
+        </div>
+        <div class="feature">
+            <div class="icon">🎵</div>
+            <h3>Extract Audio</h3>
+            <p>Pull audio tracks in MP3, AAC, WAV, or M4A format</p>
+        </div>
+        <div class="feature">
+            <div class="icon">🎤</div>
+            <h3>Audio on Video</h3>
+            <p>Add background music or voiceover to videos</p>
+        </div>
+        <div class="feature">
+            <div class="icon">🖼️</div>
+            <h3>Photos to Video</h3>
+            <p>Create slideshows with smooth transitions</p>
+        </div>
+        <div class="feature">
+            <div class="icon">💧</div>
+            <h3>Watermark</h3>
+            <p>Add text or image watermarks to protect content</p>
+        </div>
+        <div class="feature">
+            <div class="icon">🌙</div>
+            <h3>Themes</h3>
+            <p>Light and dark modes with multiple variants</p>
+        </div>
+    </div>
+
+    <div class="cta">
+        <a href="https://play.google.com/store/apps/details?id=com.ashwinsharma.vixel" class="btn">
+            Get it on Google Play
+        </a>
+    </div>
+
+    <div class="footer">
+        <a href="privacy-policy.html">Privacy Policy</a>
+        <a href="https://github.com/ashwyn222/vixel-flutter">GitHub</a>
+        <a href="mailto:ashwyn222@gmail.com">Contact</a>
+    </div>
+</body>
+</html>
+
