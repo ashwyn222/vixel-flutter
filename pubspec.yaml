@@ -1,0 +1,67 @@
+name: vixel
+description: "A powerful video editing app with FFmpeg - compress, cut, merge, extract audio, and more."
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.8.0
+  flutter: ">=3.29.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  
+  # FFmpeg for video processing (using maintained fork)
+  ffmpeg_kit_flutter_new: ^4.1.0
+  
+  # File picking
+  file_picker: ^8.0.0+1
+  image_picker: ^1.0.7
+  
+  # Video player
+  video_player: ^2.8.3
+  chewie: ^1.7.5
+  
+  # State management
+  provider: ^6.1.2
+  
+  # Local storage
+  shared_preferences: ^2.2.2
+  path_provider: ^2.1.2
+  
+  # UI components
+  flutter_spinkit: ^5.2.1
+  percent_indicator: ^4.2.3
+  
+  # Utilities
+  uuid: ^4.3.3
+  intl: ^0.19.0
+  path: ^1.9.0
+  permission_handler: ^11.3.0
+  open_file: ^3.5.10
+  video_thumbnail: ^0.5.3
+  google_fonts: ^6.2.1
+  android_intent_plus: ^5.0.2
+  
+  # Local notifications
+  flutter_local_notifications: ^18.0.1
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^5.0.0
+  flutter_launcher_icons: ^0.14.3
+
+flutter_launcher_icons:
+  android: true
+  ios: true
+  remove_alpha_ios: true
+  image_path: "assets/icon.png"
+  adaptive_icon_background: "#3D4449"
+  adaptive_icon_foreground: "assets/icon.png"
+  macos:
+    generate: true
+    image_path: "assets/icon.png"
+
+flutter:
+  uses-material-design: true
