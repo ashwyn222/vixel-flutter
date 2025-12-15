@@ -77,7 +77,7 @@ class AppThemeData {
 class AppTheme extends ChangeNotifier {
   static const String _storageKey = 'vixel_theme';
   
-  AppThemeMode _currentMode = AppThemeMode.dark1;
+  AppThemeMode _currentMode = AppThemeMode.dark3;
   
   AppThemeMode get currentMode => _currentMode;
   
@@ -93,7 +93,7 @@ class AppTheme extends ChangeNotifier {
       if (savedTheme != null) {
         final mode = AppThemeMode.values.firstWhere(
           (m) => m.name == savedTheme,
-          orElse: () => AppThemeMode.dark1,
+          orElse: () => AppThemeMode.dark3,
         );
         _currentMode = mode;
         _activeTheme = currentThemeData;
@@ -124,7 +124,7 @@ class AppTheme extends ChangeNotifier {
   
   // Static access for widgets that don't have context
   static AppThemeData? _activeTheme;
-  static AppThemeData get active => _activeTheme ?? themes[AppThemeMode.dark1]!;
+  static AppThemeData get active => _activeTheme ?? themes[AppThemeMode.dark3]!;
   
   void updateActiveTheme() {
     _activeTheme = currentThemeData;

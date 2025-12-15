@@ -1,11 +1,12 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:file_picker/file_picker.dart';
+import 'package:provider/provider.dart';
 import 'package:video_player/video_player.dart';
 import 'package:chewie/chewie.dart';
 import '../theme/app_theme.dart';
 import '../models/video_info.dart';
 import '../services/ffprobe_service.dart';
+import '../services/file_picker_service.dart';
 
 class PlayVideoScreen extends StatefulWidget {
   const PlayVideoScreen({super.key});
@@ -181,18 +182,16 @@ class _PlayVideoScreenState extends State<PlayVideoScreen> {
 
   Future<void> _pickVideo() async {
     try {
-      final result = await FilePicker.platform.pickFiles(
-        type: FileType.video,
-      );
+      final pickerService = context.read<FilePickerService>();
+      final file = await pickerService.pickVideo(context);
 
-      if (result != null && result.files.isNotEmpty && result.files.first.path != null) {
+      if (file != null) {
         setState(() => _isLoading = true);
 
         // Dispose previous controllers
         _chewieController?.dispose();
         _videoController?.dispose();
 
-        final file = File(result.files.first.path!);
         final info = await FFprobeService.analyzeVideo(file.path);
 
         // Initialize video player

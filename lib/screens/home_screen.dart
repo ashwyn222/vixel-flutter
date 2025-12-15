@@ -282,18 +282,21 @@ class _RecordsCard extends StatelessWidget {
                             Text(
                               l10n.tr('records'),
                               style: TextStyle(
-                                fontSize: 16,
+                                fontSize: 15,
                                 fontWeight: FontWeight.w600,
                                 color: theme.textPrimary,
                               ),
+                              overflow: TextOverflow.ellipsis,
                             ),
                             SizedBox(height: 2),
                             Text(
                               '${jobService.activeJobCount > 0 ? "${jobService.activeJobCount} ${l10n.tr('active')}" : ""}${jobService.activeJobCount > 0 && jobService.completedJobCount > 0 ? " · " : ""}${jobService.completedJobCount > 0 ? "${jobService.completedJobCount} ${l10n.tr('done')}" : ""}',
                               style: TextStyle(
-                                fontSize: 12,
+                                fontSize: 11,
                                 color: theme.textMuted,
                               ),
+                              overflow: TextOverflow.ellipsis,
+                              maxLines: 1,
                             ),
                           ],
                         )
@@ -301,10 +304,11 @@ class _RecordsCard extends StatelessWidget {
                           child: Text(
                             l10n.tr('records'),
                             style: TextStyle(
-                              fontSize: 16,
+                              fontSize: 15,
                               fontWeight: FontWeight.w600,
                               color: theme.textPrimary,
                             ),
+                            overflow: TextOverflow.ellipsis,
                           ),
                         ),
                 ),

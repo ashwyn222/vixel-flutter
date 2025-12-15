@@ -1,7 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:file_picker/file_picker.dart';
 import '../theme/app_theme.dart';
 import '../models/job.dart';
 import '../models/video_info.dart';
@@ -9,6 +8,7 @@ import '../services/ffmpeg_service.dart';
 import '../services/ffprobe_service.dart';
 import '../services/job_service.dart';
 import '../services/storage_service.dart';
+import '../services/file_picker_service.dart';
 import '../widgets/settings_card.dart';
 
 class MergeVideosScreen extends StatefulWidget {
@@ -457,27 +457,23 @@ class _MergeVideosScreenState extends State<MergeVideosScreen> {
 
   Future<void> _pickVideos() async {
     try {
-      final result = await FilePicker.platform.pickFiles(
-        type: FileType.video,
-        allowMultiple: true,
-      );
+      final pickerService = context.read<FilePickerService>();
+      final files = await pickerService.pickVideos(context);
 
-      if (result != null && result.files.isNotEmpty) {
+      if (files.isNotEmpty) {
         setState(() => _isAnalyzing = true);
 
-        for (final file in result.files) {
-          if (file.path != null) {
-            // Copy to accessible path for FFmpeg on Android
-            final accessiblePath = await StorageService.copyToAccessiblePath(
-              file.path!,
-              'merge_video',
-            );
-            final videoFile = File(accessiblePath);
-            final info = await FFprobeService.analyzeVideo(videoFile.path);
-            setState(() {
-              _videos.add(_VideoItem(file: videoFile, info: info));
-            });
-          }
+        for (final file in files) {
+          // Copy to accessible path for FFmpeg on Android
+          final accessiblePath = await StorageService.copyToAccessiblePath(
+            file.path,
+            'merge_video',
+          );
+          final videoFile = File(accessiblePath);
+          final info = await FFprobeService.analyzeVideo(videoFile.path);
+          setState(() {
+            _videos.add(_VideoItem(file: videoFile, info: info));
+          });
         }
 
         // Reset selections if they're now invalid

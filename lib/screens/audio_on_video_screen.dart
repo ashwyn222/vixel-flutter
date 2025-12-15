@@ -1,7 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:file_picker/file_picker.dart';
 import '../theme/app_theme.dart';
 import '../models/job.dart';
 import '../models/video_info.dart';
@@ -9,6 +8,7 @@ import '../services/ffmpeg_service.dart';
 import '../services/ffprobe_service.dart';
 import '../services/job_service.dart';
 import '../services/storage_service.dart';
+import '../services/file_picker_service.dart';
 import '../widgets/video_picker_card.dart';
 import '../widgets/settings_card.dart';
 
@@ -366,25 +366,24 @@ class _AudioOnVideoScreenState extends State<AudioOnVideoScreen> {
 
   Future<void> _pickAudio() async {
     try {
-      final result = await FilePicker.platform.pickFiles(
-        type: FileType.audio,
-      );
+      final pickerService = context.read<FilePickerService>();
+      final file = await pickerService.pickAudio(context);
 
-      if (result != null && result.files.isNotEmpty && result.files.first.path != null) {
+      if (file != null) {
         setState(() => _isAnalyzingAudio = true);
 
         // Copy to accessible path for FFmpeg on Android
         final accessiblePath = await StorageService.copyToAccessiblePath(
-          result.files.first.path!,
+          file.path,
           'audio',
         );
-        final file = File(accessiblePath);
+        final accessibleFile = File(accessiblePath);
         final duration = await FFprobeService.getAudioDuration(accessiblePath);
 
         setState(() {
-          _selectedAudio = file;
+          _selectedAudio = accessibleFile;
           _audioFilePath = accessiblePath; // Store the accessible path
-          _audioFileName = result.files.first.name;
+          _audioFileName = file.path.split('/').last;
           _audioDuration = duration;
           _isAnalyzingAudio = false;
         });

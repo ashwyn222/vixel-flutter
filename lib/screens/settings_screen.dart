@@ -4,6 +4,7 @@ import '../theme/app_theme.dart';
 import '../l10n/app_localizations.dart';
 import '../services/storage_service.dart';
 import '../services/job_service.dart';
+import '../services/file_picker_service.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -164,6 +165,119 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
             SizedBox(height: 24),
 
+            // File Picker section
+            Text(
+              l10n.tr('file_picker'),
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: t.textMuted,
+                letterSpacing: 0.5,
+              ),
+            ),
+            SizedBox(height: 12),
+
+            Consumer<FilePickerService>(
+              builder: (context, pickerService, _) {
+                return Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: t.cardBackground,
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Column(
+                    children: [
+                      // Picker type row
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                        children: [
+                          _PickerOption(
+                            type: PickerType.system,
+                            label: l10n.tr('picker_system'),
+                            description: l10n.tr('picker_system_desc'),
+                            icon: Icons.folder_open,
+                            isSelected: pickerService.pickerType == PickerType.system,
+                            onTap: () => pickerService.setPickerType(PickerType.system),
+                            theme: t,
+                          ),
+                          SizedBox(width: 12),
+                          _PickerOption(
+                            type: PickerType.gallery,
+                            label: l10n.tr('picker_gallery'),
+                            description: l10n.tr('picker_gallery_desc'),
+                            icon: Icons.grid_view_rounded,
+                            isSelected: pickerService.pickerType == PickerType.gallery,
+                            onTap: () => pickerService.setPickerType(PickerType.gallery),
+                            theme: t,
+                          ),
+                        ],
+                      ),
+                      SizedBox(height: 16),
+                      Divider(color: t.surfaceVariant, height: 1),
+                      SizedBox(height: 16),
+                      // Concurrent jobs row
+                      Row(
+                        children: [
+                          Icon(Icons.layers, size: 20, color: t.textMuted),
+                          SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  l10n.tr('concurrent_jobs'),
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w500,
+                                    color: t.textPrimary,
+                                  ),
+                                ),
+                                Text(
+                                  l10n.tr('concurrent_jobs_desc'),
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    color: t.textMuted,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          // Number selector
+                          Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              _ConcurrentJobButton(
+                                value: 1,
+                                isSelected: pickerService.maxConcurrentJobs == 1,
+                                onTap: () => pickerService.setMaxConcurrentJobs(1),
+                                theme: t,
+                              ),
+                              SizedBox(width: 8),
+                              _ConcurrentJobButton(
+                                value: 2,
+                                isSelected: pickerService.maxConcurrentJobs == 2,
+                                onTap: () => pickerService.setMaxConcurrentJobs(2),
+                                theme: t,
+                              ),
+                              SizedBox(width: 8),
+                              _ConcurrentJobButton(
+                                value: 3,
+                                isSelected: pickerService.maxConcurrentJobs == 3,
+                                onTap: () => pickerService.setMaxConcurrentJobs(3),
+                                theme: t,
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
+
+            SizedBox(height: 24),
+
             // Storage section
             Text(
               l10n.tr('storage'),
@@ -270,110 +384,26 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   _AboutRow(label: l10n.tr('app_name'), value: 'Vixel', theme: t),
                   Divider(color: t.surfaceVariant, height: 24),
                   _AboutRow(label: l10n.tr('version'), value: '1.0.0', theme: t),
-                  Divider(color: t.surfaceVariant, height: 24),
-                  _AboutRow(label: l10n.tr('built_with'), value: 'Flutter + FFmpeg', theme: t),
                 ],
+              ),
+            ),
+
+            SizedBox(height: 40),
+
+            // Developer credit
+            Center(
+              child: Text(
+                'Developed by Ashwin Sharma',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: t.textMuted.withAlpha(150),
+                  fontWeight: FontWeight.w400,
+                  letterSpacing: 0.3,
+                ),
               ),
             ),
 
             SizedBox(height: 24),
-
-            // Info card
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: t.info.withAlpha(26),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                  color: t.info.withAlpha(51),
-                ),
-              ),
-              child: Row(
-                children: [
-                  Icon(Icons.info_outline, color: t.info, size: 20),
-                  SizedBox(width: 12),
-                  Expanded(
-                    child: Text(
-                      l10n.tr('vixel_info'),
-                      style: TextStyle(
-                        fontSize: 13,
-                        color: t.info,
-                        height: 1.4,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-            SizedBox(height: 32),
-
-            // FFmpeg features
-            Text(
-              l10n.tr('powered_by_ffmpeg'),
-              style: TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-                color: t.textMuted,
-                letterSpacing: 0.5,
-              ),
-            ),
-            SizedBox(height: 12),
-
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: t.cardBackground,
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: Column(
-                children: [
-                  _FeatureRow(
-                    icon: Icons.compress,
-                    title: l10n.tr('video_compression'),
-                    subtitle: l10n.tr('h264_encoding'),
-                    theme: t,
-                  ),
-                  SizedBox(height: 12),
-                  _FeatureRow(
-                    icon: Icons.content_cut,
-                    title: l10n.tr('lossless_cutting'),
-                    subtitle: l10n.tr('stream_copy'),
-                    theme: t,
-                  ),
-                  SizedBox(height: 12),
-                  _FeatureRow(
-                    icon: Icons.layers,
-                    title: l10n.tr('video_merging'),
-                    subtitle: l10n.tr('concat_filter'),
-                    theme: t,
-                  ),
-                  SizedBox(height: 12),
-                  _FeatureRow(
-                    icon: Icons.music_note,
-                    title: l10n.tr('audio_processing'),
-                    subtitle: l10n.tr('extract_mix_add'),
-                    theme: t,
-                  ),
-                  SizedBox(height: 12),
-                  _FeatureRow(
-                    icon: Icons.photo_library,
-                    title: l10n.tr('slideshow_creation'),
-                    subtitle: l10n.tr('xfade_transitions'),
-                    theme: t,
-                  ),
-                  SizedBox(height: 12),
-                  _FeatureRow(
-                    icon: Icons.branding_watermark,
-                    title: l10n.tr('watermarking'),
-                    subtitle: l10n.tr('overlay_images_text'),
-                    theme: t,
-                  ),
-                ],
-              ),
-            ),
-
-            SizedBox(height: 32),
           ],
         ),
       ),
@@ -470,7 +500,7 @@ class _LanguageOption extends StatelessWidget {
       child: GestureDetector(
         onTap: onTap,
         child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+          padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
           decoration: BoxDecoration(
             color: isSelected ? theme.primary.withAlpha(26) : theme.surfaceVariant,
             borderRadius: BorderRadius.circular(12),
@@ -481,29 +511,153 @@ class _LanguageOption extends StatelessWidget {
           ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisSize: MainAxisSize.min,
             children: [
               Text(
                 flag,
-                style: TextStyle(fontSize: 20),
+                style: TextStyle(fontSize: 18),
               ),
-              SizedBox(width: 8),
-              Text(
-                label,
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-                  color: isSelected ? theme.primary : theme.textSecondary,
+              SizedBox(width: 6),
+              Flexible(
+                child: Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                    color: isSelected ? theme.primary : theme.textSecondary,
+                  ),
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
               if (isSelected) ...[
-                SizedBox(width: 8),
+                SizedBox(width: 4),
                 Icon(
                   Icons.check_circle,
-                  size: 18,
+                  size: 16,
                   color: theme.primary,
                 ),
               ],
             ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _PickerOption extends StatelessWidget {
+  final PickerType type;
+  final String label;
+  final String description;
+  final IconData icon;
+  final bool isSelected;
+  final VoidCallback onTap;
+  final AppThemeData theme;
+
+  const _PickerOption({
+    required this.type,
+    required this.label,
+    required this.description,
+    required this.icon,
+    required this.isSelected,
+    required this.onTap,
+    required this.theme,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Expanded(
+      child: GestureDetector(
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
+          decoration: BoxDecoration(
+            color: isSelected ? theme.primary.withAlpha(26) : theme.surfaceVariant,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: isSelected ? theme.primary : Colors.transparent,
+              width: 2,
+            ),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                icon,
+                size: 24,
+                color: isSelected ? theme.primary : theme.textMuted,
+              ),
+              SizedBox(height: 8),
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                  color: isSelected ? theme.primary : theme.textSecondary,
+                ),
+              ),
+              SizedBox(height: 2),
+              Text(
+                description,
+                style: TextStyle(
+                  fontSize: 10,
+                  color: theme.textMuted,
+                ),
+                textAlign: TextAlign.center,
+                overflow: TextOverflow.ellipsis,
+              ),
+              if (isSelected) ...[
+                SizedBox(height: 6),
+                Icon(
+                  Icons.check_circle,
+                  size: 16,
+                  color: theme.primary,
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ConcurrentJobButton extends StatelessWidget {
+  final int value;
+  final bool isSelected;
+  final VoidCallback onTap;
+  final AppThemeData theme;
+
+  const _ConcurrentJobButton({
+    required this.value,
+    required this.isSelected,
+    required this.onTap,
+    required this.theme,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 36,
+        height: 36,
+        decoration: BoxDecoration(
+          color: isSelected ? theme.primary : theme.surfaceVariant,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(
+            color: isSelected ? theme.primary : Colors.transparent,
+            width: 2,
+          ),
+        ),
+        child: Center(
+          child: Text(
+            '$value',
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: isSelected ? Colors.white : theme.textSecondary,
+            ),
           ),
         ),
       ),
@@ -652,60 +806,6 @@ class _ActionButton extends StatelessWidget {
                 ],
               ),
       ),
-    );
-  }
-}
-
-class _FeatureRow extends StatelessWidget {
-  final IconData icon;
-  final String title;
-  final String subtitle;
-  final AppThemeData theme;
-
-  const _FeatureRow({
-    required this.icon,
-    required this.title,
-    required this.subtitle,
-    required this.theme,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Container(
-          width: 36,
-          height: 36,
-          decoration: BoxDecoration(
-            color: theme.primary.withAlpha(26),
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: Icon(icon, size: 18, color: theme.primary),
-        ),
-        SizedBox(width: 12),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                title,
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
-                  color: theme.textPrimary,
-                ),
-              ),
-              Text(
-                subtitle,
-                style: TextStyle(
-                  fontSize: 12,
-                  color: theme.textMuted,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
     );
   }
 }

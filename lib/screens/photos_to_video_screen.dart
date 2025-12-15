@@ -1,13 +1,13 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:file_picker/file_picker.dart';
 import '../theme/app_theme.dart';
 import '../models/job.dart';
 import '../services/ffmpeg_service.dart';
 import '../services/ffprobe_service.dart';
 import '../services/job_service.dart';
 import '../services/storage_service.dart';
+import '../services/file_picker_service.dart';
 
 class PhotosToVideoScreen extends StatefulWidget {
   const PhotosToVideoScreen({super.key});
@@ -351,31 +351,23 @@ class _PhotosToVideoScreenState extends State<PhotosToVideoScreen> {
     }
 
     try {
-      final result = await FilePicker.platform.pickFiles(
-        type: FileType.image,
-        allowMultiple: true,
-      );
+      final pickerService = context.read<FilePickerService>();
+      final remaining = 20 - _photos.length;
+      final files = await pickerService.pickImages(context, maxCount: remaining);
 
-      if (result != null) {
-        final remaining = 20 - _photos.length;
-        final filesToAdd = result.files.take(remaining);
-
-        for (final file in filesToAdd) {
-          if (file.path != null) {
-            // Copy to accessible path for FFmpeg on Android
-            final accessiblePath = await StorageService.copyToAccessiblePath(
-              file.path!,
-              'photo',
-            );
-            setState(() {
-              _photos.add(_PhotoItem(
-                file: File(accessiblePath),
-                duration: 3.0,
-                transition: 'fade',
-              ));
-            });
-          }
-        }
+      for (final file in files) {
+        // Copy to accessible path for FFmpeg on Android
+        final accessiblePath = await StorageService.copyToAccessiblePath(
+          file.path,
+          'photo',
+        );
+        setState(() {
+          _photos.add(_PhotoItem(
+            file: File(accessiblePath),
+            duration: 3.0,
+            transition: 'fade',
+          ));
+        });
       }
     } catch (e) {
       if (mounted) {
@@ -388,25 +380,24 @@ class _PhotosToVideoScreenState extends State<PhotosToVideoScreen> {
 
   Future<void> _pickAudio() async {
     try {
-      final result = await FilePicker.platform.pickFiles(
-        type: FileType.audio,
-      );
+      final pickerService = context.read<FilePickerService>();
+      final file = await pickerService.pickAudio(context);
 
-      if (result != null && result.files.isNotEmpty && result.files.first.path != null) {
+      if (file != null) {
         setState(() => _isAnalyzingAudio = true);
 
         // Copy to accessible path for FFmpeg on Android
         final accessiblePath = await StorageService.copyToAccessiblePath(
-          result.files.first.path!,
+          file.path,
           'audio',
         );
-        final file = File(accessiblePath);
+        final accessibleFile = File(accessiblePath);
         final duration = await FFprobeService.getAudioDuration(accessiblePath);
 
         setState(() {
-          _audioFile = file;
+          _audioFile = accessibleFile;
           _audioFilePath = accessiblePath;
-          _audioFileName = result.files.first.name;
+          _audioFileName = file.path.split('/').last;
           _audioDuration = duration;
           _isAnalyzingAudio = false;
         });

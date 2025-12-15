@@ -1,12 +1,13 @@
 import 'dart:io';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
-import 'package:file_picker/file_picker.dart';
+import 'package:provider/provider.dart';
 import 'package:video_thumbnail/video_thumbnail.dart';
 import '../theme/app_theme.dart';
 import '../models/video_info.dart';
 import '../services/ffprobe_service.dart';
 import '../services/storage_service.dart';
+import '../services/file_picker_service.dart';
 
 class VideoPickerCard extends StatefulWidget {
   final Function(File file, VideoInfo? info) onVideoPicked;
@@ -38,28 +39,26 @@ class _VideoPickerCardState extends State<VideoPickerCard> {
 
   Future<void> _pickVideo() async {
     try {
-      final result = await FilePicker.platform.pickFiles(
-        type: FileType.video,
-        allowMultiple: widget.allowMultiple,
-      );
+      final pickerService = context.read<FilePickerService>();
+      final file = await pickerService.pickVideo(context);
 
-      if (result != null && result.files.isNotEmpty) {
+      if (file != null) {
         setState(() => _analyzing = true);
         
         // Copy to accessible path for FFmpeg on Android
         final accessiblePath = await StorageService.copyToAccessiblePath(
-          result.files.first.path!,
+          file.path,
           'input_video',
         );
-        final file = File(accessiblePath);
+        final accessibleFile = File(accessiblePath);
         
-        final videoInfo = await FFprobeService.analyzeVideo(file.path);
+        final videoInfo = await FFprobeService.analyzeVideo(accessibleFile.path);
         
         // Generate thumbnail
         if (widget.showThumbnail) {
           try {
             final thumbnail = await VideoThumbnail.thumbnailData(
-              video: file.path,
+              video: accessibleFile.path,
               imageFormat: ImageFormat.JPEG,
               maxWidth: 300,
               quality: 75,
@@ -72,7 +71,7 @@ class _VideoPickerCardState extends State<VideoPickerCard> {
         
         setState(() => _analyzing = false);
         
-        widget.onVideoPicked(file, videoInfo);
+        widget.onVideoPicked(accessibleFile, videoInfo);
       }
     } catch (e) {
       setState(() => _analyzing = false);

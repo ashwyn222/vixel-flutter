@@ -39,15 +39,15 @@ class StorageService {
   static Directory? _tempDir;
   static Directory? _outputDir;
   
-  // Subfolder names for different operation types
+  // Subfolder names for different operation types (Hindi)
   static const Map<String, String> _subfolderNames = {
-    'compressed': 'Compressed',
-    'cut': 'Cut',
-    'merged': 'Merged',
-    'extracted': 'ExtractedAudio',
-    'audio_on_video': 'AudioOnVideo',
-    'slideshow': 'PhotosToVideo',
-    'watermarked': 'Watermarked',
+    'compressed': 'संपीड़ित',        // Compressed
+    'cut': 'कटा_हुआ',              // Cut
+    'merged': 'जोड़ा_गया',          // Merged
+    'extracted': 'ऑडियो_निकाला',    // Extracted Audio
+    'audio_on_video': 'वीडियो_पर_ऑडियो', // Audio on Video
+    'slideshow': 'फोटो_से_वीडियो',   // Photos to Video
+    'watermarked': 'वॉटरमार्क',      // Watermarked
   };
 
   /// Initialize storage directories

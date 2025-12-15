@@ -1,13 +1,13 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:file_picker/file_picker.dart';
 import '../theme/app_theme.dart';
 import '../models/job.dart';
 import '../models/video_info.dart';
 import '../services/ffmpeg_service.dart';
 import '../services/job_service.dart';
 import '../services/storage_service.dart';
+import '../services/file_picker_service.dart';
 import '../widgets/video_picker_card.dart';
 import '../widgets/settings_card.dart';
 
@@ -421,14 +421,13 @@ class _AddWatermarkScreenState extends State<AddWatermarkScreen> {
 
   Future<void> _pickWatermarkImage() async {
     try {
-      final result = await FilePicker.platform.pickFiles(
-        type: FileType.image,
-      );
+      final pickerService = context.read<FilePickerService>();
+      final file = await pickerService.pickImage(context);
 
-      if (result != null && result.files.isNotEmpty && result.files.first.path != null) {
+      if (file != null) {
         // Copy to accessible path for FFmpeg on Android
         final accessiblePath = await StorageService.copyToAccessiblePath(
-          result.files.first.path!,
+          file.path,
           'watermark',
         );
         setState(() {
@@ -463,6 +462,7 @@ class _AddWatermarkScreenState extends State<AddWatermarkScreen> {
     final startTime = _timeRange.start;
     final endTime = _timeRange.end;
     final inputSize = _videoInfo?.fileSize;
+    final videoDuration = _videoInfo?.duration;
 
     final job = jobService.createJob(
       type: JobType.addWatermark,
@@ -505,6 +505,7 @@ class _AddWatermarkScreenState extends State<AddWatermarkScreen> {
       durationType: durationType,
       startTime: startTime,
       endTime: endTime,
+      videoDuration: videoDuration,
     );
   }
 
@@ -522,6 +523,7 @@ class _AddWatermarkScreenState extends State<AddWatermarkScreen> {
     required String durationType,
     required double startTime,
     required double endTime,
+    double? videoDuration,
   }) async {
     try {
       final result = await FFmpegService.addWatermark(
@@ -537,6 +539,7 @@ class _AddWatermarkScreenState extends State<AddWatermarkScreen> {
         durationType: durationType,
         startTime: startTime,
         endTime: endTime,
+        duration: videoDuration,
         onProgress: (progress, stats) {
           jobService.updateJobProgress(jobId, progress);
         },

@@ -17,6 +17,7 @@ dependencies:
   # File picking
   file_picker: ^8.0.0+1
   image_picker: ^1.0.7
+  wechat_assets_picker: ^9.4.2
   
   # Video player
   video_player: ^2.8.3

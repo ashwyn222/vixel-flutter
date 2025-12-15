@@ -3,8 +3,13 @@ import 'dart:io';
 import 'package:ffmpeg_kit_flutter_new/ffmpeg_kit.dart';
 import 'package:ffmpeg_kit_flutter_new/return_code.dart';
 import 'package:ffmpeg_kit_flutter_new/statistics.dart';
+import 'hardware_acceleration_service.dart';
+import 'job_queue_service.dart';
 
 typedef ProgressCallback = void Function(int progress, Statistics? stats);
+
+/// Get the appropriate video encoder (hardware or software)
+String get _videoEncoder => HardwareAccelerationService.videoEncoder;
 
 /// Helper to write FFmpeg logs to a file for debugging
 Future<void> _writeToLogFile(String message) async {
@@ -35,8 +40,8 @@ class FFmpegService {
   }) async {
     final args = <String>['-i', inputPath];
 
-    // Video codec
-    args.addAll(['-c:v', 'libx264']);
+    // Video codec (hardware or software based on device support)
+    args.addAll(['-c:v', _videoEncoder]);
 
     // Resolution scaling
     if (resolution.isNotEmpty && resolution != '-1:-1') {
@@ -285,7 +290,7 @@ class FFmpegService {
         '-t', adjustedDurations[0].toString(),
         '-i', imagePaths[0],
         '-vf', 'scale=$targetWidth:-2,format=yuv420p',
-        '-c:v', 'libx264',
+        '-c:v', _videoEncoder,
         '-preset', 'medium',
         outputPath,
       ]);
@@ -356,7 +361,7 @@ class FFmpegService {
         '-filter_complex', filterComplex,
         '-map', '[$finalLabel]',
         '-map', '${imagePaths.length}:a',
-        '-c:v', 'libx264',
+        '-c:v', _videoEncoder,
         '-pix_fmt', 'yuv420p', // Force yuv420p for compatibility
         '-preset', 'fast',
         '-crf', '23',
@@ -369,7 +374,7 @@ class FFmpegService {
       args.addAll([
         '-filter_complex', filterComplex,
         '-map', '[$finalLabel]',
-        '-c:v', 'libx264',
+        '-c:v', _videoEncoder,
         '-pix_fmt', 'yuv420p', // Force yuv420p for compatibility
         '-preset', 'fast',
         '-crf', '23',
@@ -401,6 +406,7 @@ class FFmpegService {
     String durationType = 'full', // 'full' or 'custom'
     double startTime = 0,
     double endTime = 0,
+    double? duration, // Video duration for progress calculation
     ProgressCallback? onProgress,
   }) async {
     final args = <String>['-y', '-i', videoPath];
@@ -460,7 +466,7 @@ class FFmpegService {
       args.addAll([
         '-filter_complex', overlayFilter,
         '-c:a', 'copy',
-        '-c:v', 'libx264',
+        '-c:v', _videoEncoder,
         '-pix_fmt', 'yuv420p',
         '-preset', 'fast',
         '-crf', '23',
@@ -525,7 +531,7 @@ class FFmpegService {
       args.addAll([
         '-vf', drawtextFilter,
         '-c:a', 'copy',
-        '-c:v', 'libx264',
+        '-c:v', _videoEncoder,
         '-pix_fmt', 'yuv420p',
         '-preset', 'fast',
         '-crf', '23',
@@ -535,6 +541,7 @@ class FFmpegService {
 
     return _executeWithProgress(
       args: args,
+      duration: duration,
       onProgress: onProgress,
     );
   }
@@ -545,10 +552,12 @@ class FFmpegService {
   }
 
   /// Internal method to execute FFmpeg with progress tracking (non-blocking)
+  /// Respects the concurrent jobs limit from settings
   static Future<FFmpegResult> _executeWithProgress({
     required List<String> args,
     double? duration,
     ProgressCallback? onProgress,
+    String? jobId,
   }) async {
     final command = args.join(' ');
     // Debug logging
@@ -559,6 +568,33 @@ class FFmpegService {
     // Write to log file for debugging
     await _writeToLogFile('FFMPEG COMMAND:\nffmpeg $command\n');
 
+    // If a jobId is provided, use the queue system
+    final queueService = JobQueueService();
+    final effectiveJobId = jobId ?? DateTime.now().millisecondsSinceEpoch.toString();
+    
+    // Wrap the FFmpeg execution in a queued job
+    final resultCompleter = Completer<FFmpegResult>();
+    
+    queueService.enqueue(effectiveJobId, () async {
+      final result = await _executeFFmpegCommand(
+        command: command,
+        duration: duration,
+        outputPath: args.last,
+        onProgress: onProgress,
+      );
+      resultCompleter.complete(result);
+    });
+    
+    return resultCompleter.future;
+  }
+  
+  /// Actually execute the FFmpeg command (called by queue)
+  static Future<FFmpegResult> _executeFFmpegCommand({
+    required String command,
+    required String outputPath,
+    double? duration,
+    ProgressCallback? onProgress,
+  }) async {
     // Use a Completer to handle async completion
     final completer = Completer<FFmpegResult>();
 
@@ -581,7 +617,7 @@ class FFmpegService {
         if (ReturnCode.isSuccess(returnCode)) {
           completer.complete(FFmpegResult(
             success: true,
-            outputPath: args.last,
+            outputPath: outputPath,
           ));
         } else {
           final errorMessage = _parseErrorMessage(logs);

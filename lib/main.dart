@@ -8,6 +8,9 @@ import 'package:path_provider/path_provider.dart';
 import 'services/job_service.dart';
 import 'services/storage_service.dart';
 import 'services/notification_service.dart';
+import 'services/file_picker_service.dart';
+import 'services/hardware_acceleration_service.dart';
+import 'services/job_queue_service.dart';
 import 'theme/app_theme.dart';
 import 'l10n/app_localizations.dart';
 import 'screens/home_screen.dart';
@@ -36,6 +39,13 @@ void main() async {
   
   runZonedGuarded(() async {
     WidgetsFlutterBinding.ensureInitialized();
+    
+    // Hide overflow error indicators (yellow/black stripes)
+    // This handles cases where users have large font accessibility settings
+    ErrorWidget.builder = (FlutterErrorDetails details) {
+      // Return an empty widget instead of the error widget
+      return const SizedBox.shrink();
+    };
     
     await _writeLog('App starting...');
     
@@ -92,6 +102,22 @@ void main() async {
     // Initialize localizations
     final appLocalizations = AppLocalizations();
 
+    await _writeLog('Initializing file picker service...');
+    
+    // Initialize file picker service
+    final filePickerService = FilePickerService();
+
+    await _writeLog('Initializing job queue service...');
+    
+    // Initialize job queue service with file picker for concurrent jobs setting
+    JobQueueService().init(filePickerService);
+
+    await _writeLog('Detecting hardware acceleration support...');
+    
+    // Detect hardware acceleration support (runs probe on first launch)
+    await HardwareAccelerationService.init();
+    await _writeLog('Hardware acceleration: ${HardwareAccelerationService.isSupported ? "SUPPORTED" : "NOT SUPPORTED"}');
+
     await _writeLog('Initializing notifications...');
     
     // Initialize notification service
@@ -106,6 +132,7 @@ void main() async {
           ChangeNotifierProvider.value(value: jobService),
           ChangeNotifierProvider.value(value: appTheme),
           ChangeNotifierProvider.value(value: appLocalizations),
+          ChangeNotifierProvider.value(value: filePickerService),
         ],
         child: const VixelApp(),
       ),

@@ -39,7 +39,7 @@ class AppLocalizations extends ChangeNotifier {
     'audio_on_video': 'Audio on Video',
     'photos_to_video': 'Photos to Video',
     'add_watermark': 'Add Watermark',
-    'active': 'active',
+    'active': 'Active',
     'done': 'done',
     
     // Settings Screen
@@ -77,6 +77,15 @@ class AppLocalizations extends ChangeNotifier {
     'cancel': 'Cancel',
     'clear': 'Clear',
     'vixel_info': 'Vixel uses FFmpeg for video processing. All processing happens locally on your device.',
+    
+    // File Picker Settings
+    'file_picker': 'File Picker',
+    'picker_system': 'Default',
+    'picker_system_desc': 'System file browser',
+    'picker_gallery': 'Gallery',
+    'picker_gallery_desc': 'Grid view with thumbnails',
+    'concurrent_jobs': 'Concurrent Jobs',
+    'concurrent_jobs_desc': 'Max parallel processing tasks',
     
     // Records Screen
     'all': 'All',
@@ -256,6 +265,15 @@ class AppLocalizations extends ChangeNotifier {
     'cancel': 'रद्द करें',
     'clear': 'साफ़ करें',
     'vixel_info': 'Vixel वीडियो प्रोसेसिंग के लिए FFmpeg का उपयोग करता है। सभी प्रोसेसिंग आपके डिवाइस पर स्थानीय रूप से होती है।',
+    
+    // File Picker Settings
+    'file_picker': 'फ़ाइल पिकर',
+    'picker_system': 'डिफ़ॉल्ट',
+    'picker_system_desc': 'सिस्टम फ़ाइल ब्राउज़र',
+    'picker_gallery': 'गैलरी',
+    'picker_gallery_desc': 'थंबनेल के साथ ग्रिड व्यू',
+    'concurrent_jobs': 'समवर्ती कार्य',
+    'concurrent_jobs_desc': 'अधिकतम समानांतर प्रोसेसिंग',
     
     // Records Screen
     'all': 'सभी',

@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:open_file/open_file.dart';
 import 'package:path/path.dart' as p;
 import 'package:android_intent_plus/android_intent.dart';
@@ -207,31 +208,14 @@ class JobCard extends StatelessWidget {
                   ],
                 ),
                 
-                // Error message
+                // Error indicator (no text shown, just indicates failure)
                 if (job.error != null && job.status == JobStatus.failed) ...[
                   SizedBox(height: 8),
-                  Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: AppTheme.error.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Row(
-                      children: [
-                        Icon(Icons.error_outline, size: 14, color: AppTheme.error),
-                        SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            job.error!,
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: AppTheme.error,
-                            ),
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                      ],
+                  Text(
+                    'Processing failed',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: AppTheme.textMuted,
                     ),
                   ),
                 ],
@@ -328,7 +312,7 @@ class JobCard extends StatelessWidget {
             ),
           ],
           
-          // Delete button for failed/cancelled jobs
+          // Action buttons for failed/cancelled jobs
           if (job.status == JobStatus.failed || job.status == JobStatus.cancelled) ...[
             Divider(height: 1, color: AppTheme.surfaceVariant),
             Padding(
@@ -336,6 +320,14 @@ class JobCard extends StatelessWidget {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
+                  // Copy error button (only for failed jobs with error message)
+                  if (job.status == JobStatus.failed && job.error != null)
+                    IconButton(
+                      onPressed: () => _copyError(context),
+                      icon: Icon(Icons.copy, size: 20),
+                      color: AppTheme.textMuted,
+                      tooltip: 'Copy error details',
+                    ),
                   IconButton(
                     onPressed: onDelete,
                     icon: Icon(Icons.delete_outline, size: 22),
@@ -368,6 +360,29 @@ class JobCard extends StatelessWidget {
     }
   }
 
+  void _copyError(BuildContext context) {
+    if (job.error != null) {
+      final errorDetails = '''
+Vixel Error Report
+------------------
+Job Type: ${job.typeDisplayName}
+Filename: ${job.filename}
+Time: ${job.createdAt.toIso8601String()}
+Error: ${job.error}
+''';
+      Clipboard.setData(ClipboardData(text: errorDetails));
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error details copied to clipboard'),
+            backgroundColor: AppTheme.info,
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
+    }
+  }
+
   void _openFile(BuildContext context) async {
     if (job.outputPath != null) {
       try {
@@ -382,23 +397,23 @@ class JobCard extends StatelessWidget {
     }
   }
 
-  /// Get the subfolder name for Android intent based on job type
+  /// Get the subfolder name for Android intent based on job type (Hindi)
   String _getSubfolderForJobType() {
     switch (job.type) {
       case JobType.compress:
-        return 'Compressed';
+        return 'संपीड़ित';           // Compressed
       case JobType.cut:
-        return 'Cut';
+        return 'कटा_हुआ';           // Cut
       case JobType.merge:
-        return 'Merged';
+        return 'जोड़ा_गया';          // Merged
       case JobType.extractAudio:
-        return 'ExtractedAudio';
+        return 'ऑडियो_निकाला';       // Extracted Audio
       case JobType.audioOnVideo:
-        return 'AudioOnVideo';
+        return 'वीडियो_पर_ऑडियो';    // Audio on Video
       case JobType.photosToVideo:
-        return 'PhotosToVideo';
+        return 'फोटो_से_वीडियो';      // Photos to Video
       case JobType.addWatermark:
-        return 'Watermarked';
+        return 'वॉटरमार्क';          // Watermarked
     }
   }
 
