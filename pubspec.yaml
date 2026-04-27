@@ -1,7 +1,7 @@
 name: vixel
 description: "A powerful video editing app with FFmpeg - compress, cut, merge, extract audio, and more."
 publish_to: 'none'
-version: 1.0.0+1
+version: 1.0.11+14
 
 environment:
   sdk: ^3.8.0
@@ -17,7 +17,7 @@ dependencies:
   # File picking
   file_picker: ^8.0.0+1
   image_picker: ^1.0.7
-  wechat_assets_picker: ^9.4.2
+  photo_manager: ^3.6.2
   
   # Video player
   video_player: ^2.8.3
@@ -46,6 +46,21 @@ dependencies:
   
   # Local notifications
   flutter_local_notifications: ^18.0.1
+  
+  # In-app purchases for subscriptions
+  in_app_purchase: ^3.2.0
+  
+  # In-app updates
+  in_app_update: ^4.2.3
+  
+  # In-app review
+  in_app_review: ^2.0.10
+  
+  # Firebase for auth & cloud sync
+  firebase_core: ^3.8.1
+  firebase_auth: ^5.3.4
+  cloud_firestore: ^5.5.1
+  google_sign_in: ^6.2.2
 
 dev_dependencies:
   flutter_test:
@@ -66,3 +81,6 @@ flutter_launcher_icons:
 
 flutter:
   uses-material-design: true
+  
+  assets:
+    - assets/icon.png

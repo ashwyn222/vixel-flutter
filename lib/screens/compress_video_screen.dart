@@ -8,8 +8,11 @@ import '../models/video_info.dart';
 import '../services/ffmpeg_service.dart';
 import '../services/job_service.dart';
 import '../services/storage_service.dart';
+import '../services/operation_tracker_service.dart';
+import '../services/logging_service.dart';
 import '../widgets/video_picker_card.dart';
 import '../widgets/settings_card.dart';
+import '../widgets/upgrade_prompt_dialog.dart';
 
 class CompressVideoScreen extends StatefulWidget {
   const CompressVideoScreen({super.key});
@@ -303,6 +306,17 @@ class _CompressVideoScreenState extends State<CompressVideoScreen> {
   Future<void> _compressVideo() async {
     if (_selectedFile == null) return;
 
+    // Check operation limit
+    final operationTracker = context.read<OperationTrackerService>();
+    final checkResult = operationTracker.checkOperation();
+    
+    if (!checkResult.canProceed) {
+      await UpgradePromptDialog.show(context, operationName: 'Optimize');
+      return;
+    }
+
+    // Operation will be recorded only on successful completion in JobService.markJobCompleted()
+
     final theme = context.read<AppTheme>().currentThemeData;
     final l10n = context.read<AppLocalizations>();
     final jobService = context.read<JobService>();
@@ -381,9 +395,34 @@ class _CompressVideoScreenState extends State<CompressVideoScreen> {
           savingsPercent: savings,
         );
       } else {
-        jobService.markJobFailed(jobId, result.error ?? 'Compression failed');
+        final errorMsg = result.error ?? 'Compression failed';
+        await LoggingService().logError(
+          'Video compression failed',
+          error: errorMsg,
+          operation: 'optimize_video',
+          context: {
+            'inputPath': inputPath,
+            'outputPath': outputPath,
+            'resolution': _resolution,
+            'videoBitrate': _videoBitrate,
+            'audioBitrate': _audioBitrate,
+            'preset': _preset,
+            'removeAudio': _removeAudio,
+          },
+        );
+        jobService.markJobFailed(jobId, errorMsg);
       }
-    } catch (e) {
+    } catch (e, stackTrace) {
+      await LoggingService().logError(
+        'Video compression exception',
+        error: e,
+        stackTrace: stackTrace,
+        operation: 'compress_video',
+        context: {
+          'inputPath': inputPath,
+          'outputPath': outputPath,
+        },
+      );
       jobService.markJobFailed(jobId, e.toString());
     }
   }

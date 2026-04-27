@@ -1,13 +1,15 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:file_picker/file_picker.dart';
-import 'package:wechat_assets_picker/wechat_assets_picker.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../widgets/media_picker/media_picker.dart';
+import '../widgets/file_manager/file_manager.dart';
+import '../models/media_item.dart';
+import '../models/file_item.dart';
 
 /// Enum for picker type preference
 enum PickerType {
-  system,  // Default system file browser
-  gallery, // Gallery-style grid picker (wechat_assets_picker)
+  files,   // Files - File Browser (browse file system)
+  gallery, // Gallery - Gallery picker (media library)
 }
 
 /// Service to handle file picking with configurable picker type and concurrent jobs
@@ -15,7 +17,7 @@ class FilePickerService extends ChangeNotifier {
   static const String _prefsKey = 'file_picker_type';
   static const String _concurrentJobsKey = 'max_concurrent_jobs';
   
-  PickerType _pickerType = PickerType.system;
+  PickerType _pickerType = PickerType.gallery;
   PickerType get pickerType => _pickerType;
   
   int _maxConcurrentJobs = 1;
@@ -32,10 +34,10 @@ class FilePickerService extends ChangeNotifier {
   Future<void> _loadPreference() async {
     final prefs = await SharedPreferences.getInstance();
     final savedType = prefs.getString(_prefsKey);
-    if (savedType == 'gallery') {
-      _pickerType = PickerType.gallery;
+    if (savedType == 'files') {
+      _pickerType = PickerType.files;
     } else {
-      _pickerType = PickerType.system;
+      _pickerType = PickerType.gallery;
     }
     
     _maxConcurrentJobs = prefs.getInt(_concurrentJobsKey) ?? 1;
@@ -45,7 +47,7 @@ class FilePickerService extends ChangeNotifier {
   Future<void> setPickerType(PickerType type) async {
     _pickerType = type;
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_prefsKey, type == PickerType.gallery ? 'gallery' : 'system');
+    await prefs.setString(_prefsKey, type == PickerType.files ? 'files' : 'gallery');
     notifyListeners();
   }
   
@@ -78,7 +80,7 @@ class FilePickerService extends ChangeNotifier {
     if (_pickerType == PickerType.gallery) {
       return _pickVideoFromGallery(context);
     } else {
-      return _pickVideoFromSystem();
+      return _pickVideoFromFiles(context);
     }
   }
   
@@ -87,14 +89,17 @@ class FilePickerService extends ChangeNotifier {
     if (_pickerType == PickerType.gallery) {
       return _pickVideosFromGallery(context, maxCount: maxCount);
     } else {
-      return _pickVideosFromSystem();
+      return _pickVideosFromFiles(context, maxCount: maxCount);
     }
   }
   
   /// Pick a single audio file
   Future<File?> pickAudio(BuildContext context) async {
-    // Gallery picker doesn't support audio well, always use system picker
-    return _pickAudioFromSystem();
+    if (_pickerType == PickerType.gallery) {
+      return _pickAudioFromGallery(context);
+    } else {
+      return _pickAudioFromFiles(context);
+    }
   }
   
   /// Pick multiple image files
@@ -102,7 +107,7 @@ class FilePickerService extends ChangeNotifier {
     if (_pickerType == PickerType.gallery) {
       return _pickImagesFromGallery(context, maxCount: maxCount);
     } else {
-      return _pickImagesFromSystem();
+      return _pickImagesFromFiles(context, maxCount: maxCount);
     }
   }
   
@@ -112,139 +117,152 @@ class FilePickerService extends ChangeNotifier {
       final images = await _pickImagesFromGallery(context, maxCount: 1);
       return images.isNotEmpty ? images.first : null;
     } else {
-      return _pickImageFromSystem();
+      return _pickImageFromFiles(context);
     }
   }
   
-  // ============ System File Picker Methods ============
+  // ============ File Manager Methods (Files Browser) ============
   
-  Future<File?> _pickVideoFromSystem() async {
-    final result = await FilePicker.platform.pickFiles(
-      type: FileType.video,
+  Future<File?> _pickVideoFromFiles(BuildContext context) async {
+    final result = await FileManager.show(
+      context: context,
+      mediaType: FileMediaType.video,
       allowMultiple: false,
-    );
-    if (result != null && result.files.isNotEmpty && result.files.first.path != null) {
-      return File(result.files.first.path!);
-    }
-    return null;
-  }
-  
-  Future<List<File>> _pickVideosFromSystem() async {
-    final result = await FilePicker.platform.pickFiles(
-      type: FileType.video,
-      allowMultiple: true,
-    );
-    if (result != null && result.files.isNotEmpty) {
-      return result.files
-          .where((f) => f.path != null)
-          .map((f) => File(f.path!))
-          .toList();
-    }
-    return [];
-  }
-  
-  Future<File?> _pickAudioFromSystem() async {
-    final result = await FilePicker.platform.pickFiles(
-      type: FileType.audio,
-      allowMultiple: false,
-    );
-    if (result != null && result.files.isNotEmpty && result.files.first.path != null) {
-      return File(result.files.first.path!);
-    }
-    return null;
-  }
-  
-  Future<List<File>> _pickImagesFromSystem() async {
-    final result = await FilePicker.platform.pickFiles(
-      type: FileType.image,
-      allowMultiple: true,
-    );
-    if (result != null && result.files.isNotEmpty) {
-      return result.files
-          .where((f) => f.path != null)
-          .map((f) => File(f.path!))
-          .toList();
-    }
-    return [];
-  }
-  
-  Future<File?> _pickImageFromSystem() async {
-    final result = await FilePicker.platform.pickFiles(
-      type: FileType.image,
-      allowMultiple: false,
-    );
-    if (result != null && result.files.isNotEmpty && result.files.first.path != null) {
-      return File(result.files.first.path!);
-    }
-    return null;
-  }
-  
-  // ============ Gallery Picker Methods (wechat_assets_picker) ============
-  
-  Future<File?> _pickVideoFromGallery(BuildContext context) async {
-    final List<AssetEntity>? result = await AssetPicker.pickAssets(
-      context,
-      pickerConfig: AssetPickerConfig(
-        maxAssets: 1,
-        requestType: RequestType.video,
-        themeColor: Theme.of(context).primaryColor,
-        textDelegate: const EnglishAssetPickerTextDelegate(),
-      ),
+      maxSelection: 1,
+      title: 'Select Video',
     );
     
     if (result != null && result.isNotEmpty) {
-      final file = await result.first.file;
-      return file;
+      return File(result.first.path);
+    }
+    return null;
+  }
+  
+  Future<List<File>> _pickVideosFromFiles(BuildContext context, {int? maxCount}) async {
+    final result = await FileManager.show(
+      context: context,
+      mediaType: FileMediaType.video,
+      allowMultiple: true,
+      maxSelection: maxCount ?? 10,
+      title: 'Select Videos',
+    );
+    
+    if (result != null && result.isNotEmpty) {
+      return result.map((f) => File(f.path)).toList();
+    }
+    return [];
+  }
+  
+  Future<File?> _pickAudioFromFiles(BuildContext context) async {
+    final result = await FileManager.show(
+      context: context,
+      mediaType: FileMediaType.audio,
+      allowMultiple: false,
+      maxSelection: 1,
+      title: 'Select Audio',
+    );
+    
+    if (result != null && result.isNotEmpty) {
+      return File(result.first.path);
+    }
+    return null;
+  }
+  
+  Future<List<File>> _pickImagesFromFiles(BuildContext context, {int? maxCount}) async {
+    final result = await FileManager.show(
+      context: context,
+      mediaType: FileMediaType.image,
+      allowMultiple: true,
+      maxSelection: maxCount ?? 20,
+      title: 'Select Photos',
+    );
+    
+    if (result != null && result.isNotEmpty) {
+      return result.map((f) => File(f.path)).toList();
+    }
+    return [];
+  }
+  
+  Future<File?> _pickImageFromFiles(BuildContext context) async {
+    final result = await FileManager.show(
+      context: context,
+      mediaType: FileMediaType.image,
+      allowMultiple: false,
+      maxSelection: 1,
+      title: 'Select Photo',
+    );
+    
+    if (result != null && result.isNotEmpty) {
+      return File(result.first.path);
+    }
+    return null;
+  }
+  
+  // ============ Gallery Picker Methods (MediaPicker) ============
+  
+  Future<File?> _pickVideoFromGallery(BuildContext context) async {
+    final result = await MediaPicker.show(
+      context: context,
+      mediaType: MediaType.video,
+      allowMultiple: false,
+      maxSelection: 1,
+      title: 'Select Video',
+    );
+    
+    if (result != null && result.isNotEmpty && result.first.path != null) {
+      return File(result.first.path!);
     }
     return null;
   }
   
   Future<List<File>> _pickVideosFromGallery(BuildContext context, {int? maxCount}) async {
-    final List<AssetEntity>? result = await AssetPicker.pickAssets(
-      context,
-      pickerConfig: AssetPickerConfig(
-        maxAssets: maxCount ?? 10,
-        requestType: RequestType.video,
-        themeColor: Theme.of(context).primaryColor,
-        textDelegate: const EnglishAssetPickerTextDelegate(),
-      ),
+    final result = await MediaPicker.show(
+      context: context,
+      mediaType: MediaType.video,
+      allowMultiple: true,
+      maxSelection: maxCount ?? 10,
+      title: 'Select Videos',
     );
     
     if (result != null && result.isNotEmpty) {
-      final files = <File>[];
-      for (final asset in result) {
-        final file = await asset.file;
-        if (file != null) {
-          files.add(file);
-        }
-      }
-      return files;
+      return result
+          .where((m) => m.path != null)
+          .map((m) => File(m.path!))
+          .toList();
     }
     return [];
   }
   
   Future<List<File>> _pickImagesFromGallery(BuildContext context, {int? maxCount}) async {
-    final List<AssetEntity>? result = await AssetPicker.pickAssets(
-      context,
-      pickerConfig: AssetPickerConfig(
-        maxAssets: maxCount ?? 20,
-        requestType: RequestType.image,
-        themeColor: Theme.of(context).primaryColor,
-        textDelegate: const EnglishAssetPickerTextDelegate(),
-      ),
+    final result = await MediaPicker.show(
+      context: context,
+      mediaType: MediaType.image,
+      allowMultiple: true,
+      maxSelection: maxCount ?? 20,
+      title: 'Select Photos',
     );
     
     if (result != null && result.isNotEmpty) {
-      final files = <File>[];
-      for (final asset in result) {
-        final file = await asset.file;
-        if (file != null) {
-          files.add(file);
-        }
-      }
-      return files;
+      return result
+          .where((m) => m.path != null)
+          .map((m) => File(m.path!))
+          .toList();
     }
     return [];
   }
+  
+  Future<File?> _pickAudioFromGallery(BuildContext context) async {
+    final result = await MediaPicker.show(
+      context: context,
+      mediaType: MediaType.audio,
+      allowMultiple: false,
+      maxSelection: 1,
+      title: 'Select Audio',
+    );
+    
+    if (result != null && result.isNotEmpty && result.first.path != null) {
+      return File(result.first.path!);
+    }
+    return null;
+  }
 }
-

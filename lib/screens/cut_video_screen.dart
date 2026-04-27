@@ -9,7 +9,10 @@ import '../models/video_info.dart';
 import '../services/ffmpeg_service.dart';
 import '../services/job_service.dart';
 import '../services/storage_service.dart';
+import '../services/operation_tracker_service.dart';
+import '../services/logging_service.dart';
 import '../widgets/video_picker_card.dart';
+import '../widgets/upgrade_prompt_dialog.dart';
 
 class CutVideoScreen extends StatefulWidget {
   const CutVideoScreen({super.key});
@@ -525,6 +528,17 @@ class _CutVideoScreenState extends State<CutVideoScreen> {
   Future<void> _cutVideo() async {
     if (_selectedFile == null || _startTime >= _endTime) return;
 
+    // Check operation limit
+    final operationTracker = context.read<OperationTrackerService>();
+    final checkResult = operationTracker.checkOperation();
+    
+    if (!checkResult.canProceed) {
+      await UpgradePromptDialog.show(context, operationName: 'Cut');
+      return;
+    }
+
+    // Operation will be recorded only on successful completion in JobService.markJobCompleted()
+
     // Pause video if playing
     _videoController?.pause();
 
@@ -585,9 +599,31 @@ class _CutVideoScreenState extends State<CutVideoScreen> {
         final outputSize = await StorageService.getFileSize(outputPath);
         jobService.markJobCompleted(jobId, outputSize: outputSize);
       } else {
-        jobService.markJobFailed(jobId, result.error ?? 'Cut failed');
+        final errorMsg = result.error ?? 'Cut failed';
+        await LoggingService().logError(
+          'Video cut failed',
+          error: errorMsg,
+          operation: 'cut_video',
+          context: {
+            'inputPath': inputPath,
+            'outputPath': outputPath,
+            'startTime': _startTime,
+            'endTime': _endTime,
+          },
+        );
+        jobService.markJobFailed(jobId, errorMsg);
       }
-    } catch (e) {
+    } catch (e, stackTrace) {
+      await LoggingService().logError(
+        'Video cut exception',
+        error: e,
+        stackTrace: stackTrace,
+        operation: 'cut_video',
+        context: {
+          'inputPath': inputPath,
+          'outputPath': outputPath,
+        },
+      );
       jobService.markJobFailed(jobId, e.toString());
     }
   }

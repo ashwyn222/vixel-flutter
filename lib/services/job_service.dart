@@ -3,11 +3,15 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uuid/uuid.dart';
 import '../models/job.dart';
 import 'notification_service.dart';
+import 'review_service.dart';
+import 'operation_tracker_service.dart';
+import 'logging_service.dart';
 
 class JobService extends ChangeNotifier {
   static const String _storageKey = 'vixel_jobs';
   final List<Job> _jobs = [];
   final Uuid _uuid = const Uuid();
+  OperationTrackerService? _operationTrackerService;
 
   List<Job> get jobs => List.unmodifiable(_jobs);
   
@@ -28,7 +32,8 @@ class JobService extends ChangeNotifier {
   int get completedJobCount => completedJobs.length;
 
   /// Initialize and load jobs from storage
-  Future<void> init() async {
+  Future<void> init({OperationTrackerService? operationTrackerService}) async {
+    _operationTrackerService = operationTrackerService;
     await _loadJobs();
   }
 
@@ -142,6 +147,39 @@ class JobService extends ChangeNotifier {
       
       // Send failure notification
       NotificationService.showJobFailedNotification(job);
+      
+      // Log error to Firestore as fallback (in case operation screen didn't log it)
+      // This ensures we capture all failures even if logging in operation screens fails
+      LoggingService().logError(
+        'Job failed: ${job.type.name}',
+        error: error,
+        operation: _getOperationName(job.type),
+        context: {
+          'jobId': id,
+          'jobType': job.type.name,
+          'filename': job.filename,
+        },
+      );
+    }
+  }
+
+  /// Get operation name from job type
+  String _getOperationName(JobType type) {
+    switch (type) {
+      case JobType.compress:
+        return 'optimize_video';
+      case JobType.cut:
+        return 'cut_video';
+      case JobType.merge:
+        return 'merge_videos';
+      case JobType.extractAudio:
+        return 'extract_audio';
+      case JobType.audioOnVideo:
+        return 'audio_on_video';
+      case JobType.photosToVideo:
+        return 'photos_to_video';
+      case JobType.addWatermark:
+        return 'add_watermark';
     }
   }
 
@@ -159,6 +197,12 @@ class JobService extends ChangeNotifier {
       
       // Send success notification
       NotificationService.showJobCompletedNotification(job);
+      
+      // Record successful operation for quota tracking (only on success)
+      _operationTrackerService?.recordOperation();
+      
+      // Record successful operation for review prompt
+      ReviewService().recordSuccessfulOperation();
     }
   }
 

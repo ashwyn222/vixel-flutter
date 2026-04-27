@@ -1,38 +1,19 @@
 import 'package:flutter/material.dart';
 
-enum AppLanguage {
-  english,
-  hindi,
-}
-
 class AppLocalizations extends ChangeNotifier {
-  AppLanguage _currentLanguage = AppLanguage.english;
-  
-  AppLanguage get currentLanguage => _currentLanguage;
-  
-  void setLanguage(AppLanguage language) {
-    _currentLanguage = language;
-    notifyListeners();
-  }
-  
-  String get languageCode => _currentLanguage == AppLanguage.english ? 'en' : 'hi';
-  
   // Get translated string
   String tr(String key) {
-    final translations = _currentLanguage == AppLanguage.english 
-        ? _englishStrings 
-        : _hindiStrings;
-    return translations[key] ?? key;
+    return _strings[key] ?? key;
   }
   
-  // English translations
-  static const Map<String, String> _englishStrings = {
+  // English strings
+  static const Map<String, String> _strings = {
     // Home Screen
     'records': 'Records',
     'video_editing': 'Video Editing',
     'audio_operations': 'Audio Operations',
     'creative_tools': 'Creative Tools',
-    'compress': 'Compress',
+    'compress': 'Optimize',
     'cut': 'Cut',
     'merge': 'Merge',
     'extract_audio': 'Extract Audio',
@@ -45,7 +26,6 @@ class AppLocalizations extends ChangeNotifier {
     // Settings Screen
     'settings': 'Settings',
     'theme': 'Theme',
-    'language': 'Language',
     'storage': 'Storage',
     'total_storage_used': 'Total Storage Used',
     'temporary_files': 'Temporary Files',
@@ -80,8 +60,8 @@ class AppLocalizations extends ChangeNotifier {
     
     // File Picker Settings
     'file_picker': 'File Picker',
-    'picker_system': 'Default',
-    'picker_system_desc': 'System file browser',
+    'picker_files': 'Files',
+    'picker_files_desc': 'File Browser',
     'picker_gallery': 'Gallery',
     'picker_gallery_desc': 'Grid view with thumbnails',
     'concurrent_jobs': 'Concurrent Jobs',
@@ -107,8 +87,8 @@ class AppLocalizations extends ChangeNotifier {
     'job_cancelled': 'Job cancelled',
     
     // Compress Screen
-    'compress_video': 'Compress Video',
-    'compression_settings': 'Compression Settings',
+    'compress_video': 'Optimize Video',
+    'compression_settings': 'Optimization Settings',
     'resolution': 'Resolution',
     'output_resolution': 'Output video resolution',
     'video_bitrate': 'Video Bitrate',
@@ -119,7 +99,7 @@ class AppLocalizations extends ChangeNotifier {
     'audio_quality': 'Audio quality setting',
     'remove_audio': 'Remove Audio',
     'strip_audio': 'Strip audio track from video',
-    'compression_started': 'Compression started! Check Records for progress.',
+    'compression_started': 'Optimization started! Check Records for progress.',
     
     // Cut Screen
     'cut_video': 'Cut Video',
@@ -211,194 +191,76 @@ class AppLocalizations extends ChangeNotifier {
     'cancelled': 'Cancelled',
     'original': 'Original',
     'auto': 'Auto',
-  };
-  
-  // Hindi translations
-  static const Map<String, String> _hindiStrings = {
-    // Home Screen
-    'records': 'रिकॉर्ड्स',
-    'video_editing': 'वीडियो संपादन',
-    'audio_operations': 'ऑडियो कार्य',
-    'creative_tools': 'क्रिएटिव टूल्स',
-    'compress': 'संपीड़ित करें',
-    'cut': 'काटें',
-    'merge': 'जोड़ें',
-    'extract_audio': 'ऑडियो निकालें',
-    'audio_on_video': 'वीडियो पर ऑडियो',
-    'photos_to_video': 'फोटो से वीडियो',
-    'add_watermark': 'वॉटरमार्क जोड़ें',
-    'active': 'सक्रिय',
-    'done': 'पूर्ण',
     
-    // Settings Screen
-    'settings': 'सेटिंग्स',
-    'theme': 'थीम',
-    'language': 'भाषा',
-    'storage': 'स्टोरेज',
-    'total_storage_used': 'कुल स्टोरेज उपयोग',
-    'temporary_files': 'अस्थायी फ़ाइलें',
-    'output_files': 'आउटपुट फ़ाइलें',
-    'files': 'फ़ाइलें',
-    'clear_temp': 'टेम्प साफ़ करें',
-    'clear_all': 'सब साफ़ करें',
-    'about': 'जानकारी',
-    'app_name': 'ऐप का नाम',
-    'version': 'संस्करण',
-    'built_with': 'निर्मित',
-    'powered_by_ffmpeg': 'FFmpeg द्वारा संचालित',
-    'video_compression': 'वीडियो संपीड़न',
-    'h264_encoding': 'समायोज्य गुणवत्ता के साथ H.264 एन्कोडिंग',
-    'lossless_cutting': 'लॉसलेस कटिंग',
-    'stream_copy': 'तेज़ ट्रिमिंग के लिए स्ट्रीम कॉपी',
-    'video_merging': 'वीडियो मर्जिंग',
-    'concat_filter': 'री-एन्कोडिंग के साथ कॉनकैट फ़िल्टर',
-    'audio_processing': 'ऑडियो प्रोसेसिंग',
-    'extract_mix_add': 'ऑडियो ट्रैक निकालें, मिक्स करें और जोड़ें',
-    'slideshow_creation': 'स्लाइडशो निर्माण',
-    'xfade_transitions': 'छवियों के बीच Xfade ट्रांज़िशन',
-    'watermarking': 'वॉटरमार्किंग',
-    'overlay_images_text': 'छवियों और टेक्स्ट को ओवरले करें',
-    'clear_temporary_files': 'अस्थायी फ़ाइलें साफ़ करें',
-    'clear_all_files': 'सभी फ़ाइलें साफ़ करें',
-    'clear_temp_message': 'यह सभी अस्थायी फ़ाइलें हटा देगा। आउटपुट फ़ाइलें रखी जाएंगी।',
-    'clear_all_message': 'यह आपके प्रोसेस किए गए वीडियो और सभी जॉब रिकॉर्ड सहित सभी फ़ाइलें हटा देगा। यह पूर्ववत नहीं किया जा सकता।',
-    'cancel': 'रद्द करें',
-    'clear': 'साफ़ करें',
-    'vixel_info': 'Vixel वीडियो प्रोसेसिंग के लिए FFmpeg का उपयोग करता है। सभी प्रोसेसिंग आपके डिवाइस पर स्थानीय रूप से होती है।',
+    // Subscription & Pro
+    'vixel_pro': 'Vixel Pro',
+    'unlock_vixel_pro': 'Unlock Vixel Pro',
+    'pro_description': 'Get unlimited access to all video editing features',
+    'pro_benefits': 'Pro Benefits',
+    'pro_active': 'Pro Active',
+    'plan': 'Plan',
+    'expires': 'Expires',
+    'days_left': 'days left',
+    'choose_your_plan': 'Choose Your Plan',
+    'weekly': 'Weekly',
+    'monthly': 'Monthly',
+    'yearly': 'Yearly',
+    'lifetime': 'Lifetime',
+    'days': 'days',
+    'forever': 'Forever',
+    'popular': 'Popular',
+    'best_value': 'Best Value',
+    'subscribe_now': 'Subscribe Now',
+    'restore_purchases': 'Restore Purchases',
+    'restore_initiated': 'Checking for previous purchases...',
+    'subscription_activated': 'Subscription activated! Enjoy unlimited access.',
+    'subscription_terms': 'Subscription auto-renews unless cancelled. Manage in Play Store/App Store settings.',
+    'benefit_unlimited_operations': 'Unlimited video operations',
+    'benefit_all_features': 'Access to all features',
+    'benefit_no_waiting': 'No daily limits or waiting',
+    'benefit_priority_support': 'Priority support',
+    'daily_limit_reached': 'Daily Limit Reached',
+    'upgrade_to_unlock': 'Upgrade to Pro for unlimited operations',
+    'upgrade_to_pro': 'Upgrade to Pro',
+    'maybe_later': 'Maybe Later',
+    'next_operation_in': 'Next free operation in',
+    'operations_remaining': 'operations remaining',
+    'operations_today': 'operations today',
+    'unlimited': 'Unlimited',
+    'free_tier': 'Free',
+    'subscription': 'Subscription',
+    'manage_subscription': 'Manage Subscription',
     
-    // File Picker Settings
-    'file_picker': 'फ़ाइल पिकर',
-    'picker_system': 'डिफ़ॉल्ट',
-    'picker_system_desc': 'सिस्टम फ़ाइल ब्राउज़र',
-    'picker_gallery': 'गैलरी',
-    'picker_gallery_desc': 'थंबनेल के साथ ग्रिड व्यू',
-    'concurrent_jobs': 'समवर्ती कार्य',
-    'concurrent_jobs_desc': 'अधिकतम समानांतर प्रोसेसिंग',
-    
-    // Records Screen
-    'all': 'सभी',
-    'completed': 'पूर्ण',
-    'clear_completed': 'पूर्ण साफ़ करें',
-    'clear_failed': 'विफल साफ़ करें',
-    'no_jobs_yet': 'अभी कोई कार्य नहीं',
-    'processing_history': 'आपका प्रोसेसिंग इतिहास यहाँ दिखाई देगा',
-    'clear_completed_jobs': 'पूर्ण कार्य साफ़ करें',
-    'clear_completed_message': 'क्या आप सभी पूर्ण कार्यों को साफ़ करना चाहते हैं?',
-    'clear_failed_jobs': 'विफल कार्य साफ़ करें',
-    'clear_failed_message': 'क्या आप सभी विफल कार्यों को साफ़ करना चाहते हैं?',
-    'clear_all_jobs': 'सभी कार्य साफ़ करें',
-    'clear_all_jobs_message': 'क्या आप सभी कार्यों को साफ़ करना चाहते हैं? यह पूर्ववत नहीं किया जा सकता।',
-    'delete_job': 'कार्य हटाएं',
-    'delete_job_message': 'क्या आप इस कार्य को हटाना चाहते हैं?',
-    'confirm': 'पुष्टि करें',
-    'delete': 'हटाएं',
-    'job_cancelled': 'कार्य रद्द',
-    
-    // Compress Screen
-    'compress_video': 'वीडियो संपीड़ित करें',
-    'compression_settings': 'संपीड़न सेटिंग्स',
-    'resolution': 'रेज़ोल्यूशन',
-    'output_resolution': 'आउटपुट वीडियो रेज़ोल्यूशन',
-    'video_bitrate': 'वीडियो बिटरेट',
-    'bitrate_hint': 'कम = छोटी फ़ाइल, कम गुणवत्ता',
-    'compression_speed': 'संपीड़न गति',
-    'speed_hint': 'धीमा = बेहतर संपीड़न अनुपात',
-    'audio_bitrate': 'ऑडियो बिटरेट',
-    'audio_quality': 'ऑडियो गुणवत्ता सेटिंग',
-    'remove_audio': 'ऑडियो हटाएं',
-    'strip_audio': 'वीडियो से ऑडियो ट्रैक हटाएं',
-    'compression_started': 'संपीड़न शुरू! प्रगति के लिए रिकॉर्ड्स देखें।',
-    
-    // Cut Screen
-    'cut_video': 'वीडियो काटें',
-    'cut_range': 'कट रेंज',
-    'start_time': 'शुरू का समय',
-    'end_time': 'समाप्ति का समय',
-    'set_start': 'शुरू सेट करें',
-    'set_end': 'समाप्ति सेट करें',
-    'preview_selected_range': 'चयनित रेंज देखें',
-    'quick_trim': 'त्वरित ट्रिम',
-    'first_10s': 'पहले 10 सेकंड',
-    'first_30s': 'पहले 30 सेकंड',
-    'last_10s': 'अंतिम 10 सेकंड',
-    'last_30s': 'अंतिम 30 सेकंड',
-    'cut_started': 'कट शुरू! प्रगति के लिए रिकॉर्ड्स देखें।',
-    
-    // Merge Screen
-    'merge_videos': 'वीडियो जोड़ें',
-    'select_videos': 'वीडियो चुनें',
-    'add_videos': 'वीडियो जोड़ें',
-    'tap_to_add': 'मर्ज करने के लिए वीडियो जोड़ने के लिए टैप करें',
-    'output_settings': 'आउटपुट सेटिंग्स',
-    'merge_started': 'मर्ज शुरू! प्रगति के लिए रिकॉर्ड्स देखें।',
-    
-    // Extract Audio Screen
-    'extract_audio_title': 'ऑडियो निकालें',
-    'output_format': 'आउटपुट फॉर्मेट',
-    'audio_format': 'ऑडियो फ़ाइल फॉर्मेट',
-    'extraction_started': 'निष्कर्षण शुरू! प्रगति के लिए रिकॉर्ड्स देखें।',
-    
-    // Audio on Video Screen
-    'audio_on_video_title': 'वीडियो पर ऑडियो',
-    'select_audio': 'ऑडियो चुनें',
-    'volume_settings': 'वॉल्यूम सेटिंग्स',
-    'original_audio': 'मूल ऑडियो',
-    'new_audio': 'नया ऑडियो',
-    'video_duration': 'वीडियो अवधि',
-    'audio_duration': 'ऑडियो अवधि',
-    'audio_will_loop': 'ऑडियो वीडियो की लंबाई से मेल खाने के लिए लूप होगा',
-    'add_audio_to_video': 'वीडियो में ऑडियो जोड़ें',
-    'adding_audio': 'वीडियो में ऑडियो जोड़ रहे हैं। प्रगति के लिए रिकॉर्ड्स देखें।',
-    
-    // Photos to Video Screen
-    'photos_to_video_title': 'फोटो से वीडियो',
-    'add_photos': 'फोटो जोड़ें',
-    'select_images': 'अपने स्लाइडशो के लिए छवियां चुनें',
-    'tap_to_add_more': 'और फोटो जोड़ने के लिए टैप करें',
-    'photos': 'फोटो',
-    'total': 'कुल',
-    'background_music': 'बैकग्राउंड म्यूज़िक (वैकल्पिक)',
-    'create_video': 'वीडियो बनाएं',
-    'select_at_least_2': 'कम से कम 2 फोटो चुनें',
-    'creating_video': 'वीडियो बना रहे हैं। प्रगति के लिए रिकॉर्ड्स देखें।',
-    'max_photos': 'अधिकतम 20 फोटो की अनुमति है',
-    'duration': 'अवधि',
-    'transition': 'ट्रांज़िशन',
-    
-    // Add Watermark Screen
-    'add_watermark_title': 'वॉटरमार्क जोड़ें',
-    'watermark_type': 'वॉटरमार्क प्रकार',
-    'text': 'टेक्स्ट',
-    'image': 'छवि',
-    'watermark_text': 'वॉटरमार्क टेक्स्ट',
-    'enter_watermark': 'वॉटरमार्क टेक्स्ट दर्ज करें',
-    'select_watermark_image': 'वॉटरमार्क छवि चुनें',
-    'watermark_size': 'वॉटरमार्क आकार',
-    'size_relative': 'वीडियो चौड़ाई के सापेक्ष आकार',
-    'position': 'स्थिति',
-    'top_left': 'ऊपर बाएं',
-    'top_right': 'ऊपर दाएं',
-    'center': 'केंद्र',
-    'bottom_left': 'नीचे बाएं',
-    'bottom_right': 'नीचे दाएं',
-    'opacity': 'पारदर्शिता',
-    'full_video': 'पूरा वीडियो',
-    'custom_range': 'कस्टम रेंज',
-    'adding_watermark': 'वॉटरमार्क जोड़ रहे हैं। प्रगति के लिए रिकॉर्ड्स देखें।',
-    
-    // Play Video Screen
-    'play_video': 'वीडियो चलाएं',
-    'select_video': 'वीडियो चुनें',
-    
-    // Common
-    'error': 'त्रुटि',
-    'success': 'सफल',
-    'processing': 'प्रोसेसिंग',
-    'pending': 'लंबित',
-    'failed': 'विफल',
-    'cancelled': 'रद्द',
-    'original': 'मूल',
-    'auto': 'ऑटो',
+    // Account & Auth
+    'account': 'Account',
+    'sign_in_with_google': 'Sign in with Google',
+    'continue_with_google': 'Continue with Google',
+    'sync_across_devices': 'Sync your data across devices',
+    'sign_in_benefit': 'Sign in to keep your operation history and subscription synced across devices.',
+    'sign_out': 'Sign Out',
+    'sign_out_message': 'Are you sure you want to sign out? You will need to sign in again to use the app.',
+    'synced': 'Synced',
+    'user': 'User',
+    'app_tagline': 'Powerful video editing made simple',
+    'all_the_tools': 'All the tools you need',
+    'benefit_all_in_one': 'All-in-one video editor',
+    'benefit_no_internet': 'No internet required',
+    'benefit_sync_devices': 'Sync progress across devices',
+    'extract': 'Extract',
+    'add_audio_short': 'Add Audio',
+    'slideshow': 'Slideshow',
+    'watermark': 'Watermark',
+    'sign_in_terms': 'By continuing, you agree to our Terms of Service and Privacy Policy',
+
+    // Privacy / Account deletion
+    'privacy': 'Privacy',
+    'send_error_reports': 'Send anonymous error reports',
+    'send_error_reports_desc': 'Help debug failures by sending technical reports. No media files, no email.',
+    'delete_account': 'Delete Account',
+    'delete_account_desc': 'Permanently delete your account and all linked data.',
+    'delete_account_title': 'Delete account?',
+    'delete_account_message': 'This permanently deletes your Vixel account, your synced operation history, and all error reports linked to your account. This cannot be undone.',
+    'account_deleted': 'Account deleted',
+    'delete_account_failed': 'Failed to delete account. Please try again.',
   };
 }
-

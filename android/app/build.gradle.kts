@@ -6,6 +6,8 @@ plugins {
     id("kotlin-android")
     // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
     id("dev.flutter.flutter-gradle-plugin")
+    // Google Services for Firebase
+    id("com.google.gms.google-services")
 }
 
 // Load keystore properties
@@ -54,13 +56,13 @@ android {
     buildTypes {
         release {
             signingConfig = signingConfigs.getByName("release")
-            // Enable minification and shrinking for smaller APK
-            isMinifyEnabled = true
-            isShrinkResources = true
-            proguardFiles(
-                getDefaultProguardFile("proguard-android-optimize.txt"),
-                "proguard-rules.pro"
-            )
+            // Disable minification and shrinking to fix plugin issues
+            isMinifyEnabled = false
+            isShrinkResources = false
+            // proguardFiles(
+            //     getDefaultProguardFile("proguard-android-optimize.txt"),
+            //     "proguard-rules.pro"
+            // )
         }
     }
 }

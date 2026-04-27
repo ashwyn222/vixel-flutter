@@ -1,176 +1,182 @@
-import 'dart:async';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:permission_handler/permission_handler.dart';
-import 'package:path_provider/path_provider.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'services/job_service.dart';
+import 'services/logging_service.dart';
 import 'services/storage_service.dart';
 import 'services/notification_service.dart';
 import 'services/file_picker_service.dart';
 import 'services/hardware_acceleration_service.dart';
 import 'services/job_queue_service.dart';
+import 'services/subscription_service.dart';
+import 'services/operation_tracker_service.dart';
+import 'services/auth_service.dart';
+import 'services/review_service.dart';
 import 'theme/app_theme.dart';
 import 'l10n/app_localizations.dart';
 import 'screens/home_screen.dart';
-
-// Global log file for debugging
-File? _logFile;
-
-Future<void> _writeLog(String message) async {
-  try {
-    final timestamp = DateTime.now().toIso8601String();
-    final logMessage = '[$timestamp] $message\n';
-    
-    if (_logFile != null) {
-      await _logFile!.writeAsString(logMessage, mode: FileMode.append);
-    }
-  } catch (e) {
-    // Ignore log errors
-  }
-}
+import 'screens/sign_in_screen.dart';
 
 void main() async {
-  // Wrap everything in error handling
-  FlutterError.onError = (details) async {
-    await _writeLog('FLUTTER ERROR: ${details.exception}\n${details.stack}');
-  };
+  WidgetsFlutterBinding.ensureInitialized();
   
-  runZonedGuarded(() async {
-    WidgetsFlutterBinding.ensureInitialized();
-    
-    // Hide overflow error indicators (yellow/black stripes)
-    // This handles cases where users have large font accessibility settings
-    ErrorWidget.builder = (FlutterErrorDetails details) {
-      // Return an empty widget instead of the error widget
-      return const SizedBox.shrink();
-    };
-    
-    await _writeLog('App starting...');
-    
-    // Initialize log file in Downloads folder (accessible via file manager)
+  // Hide overflow error indicators (yellow/black stripes)
+  ErrorWidget.builder = (FlutterErrorDetails details) {
+    return const SizedBox.shrink();
+  };
+
+  // Initialize Firebase
+  try {
+    await Firebase.initializeApp();
+  } catch (e) {
+    // Firebase init failed - continue without cloud features
+    print('Firebase init failed: $e');
+  }
+
+  // Request permissions on Android
+  if (Platform.isAndroid) {
     try {
-      if (Platform.isAndroid) {
-        // Use external storage Downloads folder
-        final dir = Directory('/storage/emulated/0/Download');
-        if (await dir.exists()) {
-          _logFile = File('${dir.path}/vixel_debug_log.txt');
-          await _logFile!.writeAsString('=== Vixel Debug Log ===\nStarted: ${DateTime.now()}\n\n');
-          await _writeLog('Log file initialized at: ${_logFile!.path}');
-        }
-      }
-    } catch (e) {
-      // Try app documents directory as fallback
-      try {
-        final dir = await getApplicationDocumentsDirectory();
-        _logFile = File('${dir.path}/vixel_debug_log.txt');
-        await _logFile!.writeAsString('=== Vixel Debug Log ===\nStarted: ${DateTime.now()}\n\n');
-      } catch (e2) {
-        // Ignore
-      }
-    }
-    
-    await _writeLog('Setting system UI overlay style...');
-
-    await _writeLog('Requesting permissions on Android...');
-    
-    // Request permissions on Android
-    if (Platform.isAndroid) {
       await _requestPermissions();
+    } catch (e) {
+      // Continue even if permissions fail
     }
+  }
 
-    await _writeLog('Initializing storage...');
-    
-    // Initialize storage
+  // Initialize storage
+  try {
     await StorageService.init();
+  } catch (e) {
+    // Storage init failed
+  }
 
-    await _writeLog('Initializing job service...');
-    
-    // Initialize job service
-    final jobService = JobService();
-    await jobService.init();
+  // Initialize job service (will be initialized after operationTrackerService)
+  final jobService = JobService();
 
-    await _writeLog('Initializing theme...');
-    
-    // Initialize theme
-    final appTheme = AppTheme();
+  // Initialize theme
+  final appTheme = AppTheme();
+  try {
     appTheme.updateActiveTheme();
+  } catch (e) {
+    // Theme init failed
+  }
 
-    await _writeLog('Initializing localizations...');
-    
-    // Initialize localizations
-    final appLocalizations = AppLocalizations();
+  // Initialize localizations
+  final appLocalizations = AppLocalizations();
 
-    await _writeLog('Initializing file picker service...');
-    
-    // Initialize file picker service
-    final filePickerService = FilePickerService();
+  // Initialize file picker service
+  final filePickerService = FilePickerService();
 
-    await _writeLog('Initializing job queue service...');
-    
-    // Initialize job queue service with file picker for concurrent jobs setting
+  // Initialize job queue service
+  try {
     JobQueueService().init(filePickerService);
+  } catch (e) {
+    // Job queue init failed
+  }
 
-    await _writeLog('Detecting hardware acceleration support...');
-    
-    // Detect hardware acceleration support (runs probe on first launch)
+  // Initialize auth service
+  final authService = AuthService();
+  try {
+    await authService.init();
+  } catch (e) {
+    // Auth service init failed
+    print('Auth service init failed: $e');
+  }
+
+  // Initialize subscription service
+  final subscriptionService = SubscriptionService();
+  try {
+    await subscriptionService.init();
+  } catch (e) {
+    // Subscription service init failed
+  }
+
+  // Initialize operation tracker service (with auth for cloud sync)
+  final operationTrackerService = OperationTrackerService();
+  try {
+    await operationTrackerService.init(
+      subscriptionService,
+      authService: authService,
+    );
+  } catch (e) {
+    // Operation tracker init failed
+    print('Operation tracker init failed: $e');
+  }
+
+  // Initialize job service with operation tracker
+  try {
+    await jobService.init(operationTrackerService: operationTrackerService);
+  } catch (e) {
+    // Job queue init failed
+  }
+
+  // Detect hardware acceleration support
+  try {
     await HardwareAccelerationService.init();
-    await _writeLog('Hardware acceleration: ${HardwareAccelerationService.isSupported ? "SUPPORTED" : "NOT SUPPORTED"}');
+  } catch (e) {
+    // Hardware acceleration detection failed
+  }
 
-    await _writeLog('Initializing notifications...');
-    
-    // Initialize notification service
+  // Initialize notification service
+  try {
     await NotificationService.init();
     await NotificationService.requestPermissions();
+  } catch (e) {
+    // Notifications init failed
+  }
 
-    await _writeLog('Starting app UI...');
+  // Initialize review service
+  try {
+    await ReviewService().init();
+  } catch (e) {
+    // Review service init failed
+  }
 
-    runApp(
-      MultiProvider(
-        providers: [
-          ChangeNotifierProvider.value(value: jobService),
-          ChangeNotifierProvider.value(value: appTheme),
-          ChangeNotifierProvider.value(value: appLocalizations),
-          ChangeNotifierProvider.value(value: filePickerService),
-        ],
-        child: const VixelApp(),
-      ),
-    );
-    
-    await _writeLog('App UI started successfully!');
-  }, (error, stack) async {
-    await _writeLog('ZONE ERROR: $error\n$stack');
-  });
+  // Initialize logging service
+  final loggingService = LoggingService();
+  try {
+    await loggingService.init(authService: authService);
+  } catch (e) {
+    // Logging service init failed
+  }
+
+  runApp(
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider.value(value: jobService),
+        ChangeNotifierProvider.value(value: appTheme),
+        ChangeNotifierProvider.value(value: appLocalizations),
+        ChangeNotifierProvider.value(value: filePickerService),
+        ChangeNotifierProvider.value(value: authService),
+        ChangeNotifierProvider.value(value: subscriptionService),
+        ChangeNotifierProvider.value(value: operationTrackerService),
+        ChangeNotifierProvider.value(value: loggingService),
+      ],
+      child: const VixelApp(),
+    ),
+  );
 }
 
 Future<void> _requestPermissions() async {
-  await _writeLog('Starting permission requests...');
-  
   // For Android 13+ (API 33+), we need specific media permissions
-  // For older versions, we need storage permissions
-  
   final permissions = <Permission>[
     Permission.videos,
     Permission.audio,
     Permission.photos,
   ];
 
-  // Request all permissions
   for (final permission in permissions) {
     try {
       final status = await permission.status;
-      await _writeLog('Permission $permission status: $status');
       if (!status.isGranted) {
-        final result = await permission.request();
-        await _writeLog('Permission $permission request result: $result');
+        await permission.request();
       }
     } catch (e) {
-      await _writeLog('Permission $permission error: $e');
+      // Ignore permission errors - app will request again when needed
     }
   }
-  
-  await _writeLog('Permission requests completed');
 }
 
 class VixelApp extends StatelessWidget {
@@ -178,8 +184,8 @@ class VixelApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<AppTheme>(
-      builder: (context, appTheme, child) {
+    return Consumer2<AppTheme, AuthService>(
+      builder: (context, appTheme, authService, child) {
         // Update static theme reference
         appTheme.updateActiveTheme();
         
@@ -196,7 +202,10 @@ class VixelApp extends StatelessWidget {
           title: 'Vixel',
           debugShowCheckedModeBanner: false,
           theme: appTheme.themeData,
-          home: const HomeScreen(),
+          // Show sign-in screen if not authenticated
+          home: authService.isSignedIn 
+              ? const HomeScreen() 
+              : const SignInScreen(),
         );
       },
     );

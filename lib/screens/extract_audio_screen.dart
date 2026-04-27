@@ -8,8 +8,11 @@ import '../models/video_info.dart';
 import '../services/ffmpeg_service.dart';
 import '../services/job_service.dart';
 import '../services/storage_service.dart';
+import '../services/operation_tracker_service.dart';
+import '../services/logging_service.dart';
 import '../widgets/video_picker_card.dart';
 import '../widgets/settings_card.dart';
+import '../widgets/upgrade_prompt_dialog.dart';
 
 class ExtractAudioScreen extends StatefulWidget {
   const ExtractAudioScreen({super.key});
@@ -210,6 +213,17 @@ class _ExtractAudioScreenState extends State<ExtractAudioScreen> {
   Future<void> _extractAudio() async {
     if (_selectedFile == null || _videoInfo?.hasAudio != true) return;
 
+    // Check operation limit
+    final operationTracker = context.read<OperationTrackerService>();
+    final checkResult = operationTracker.checkOperation();
+    
+    if (!checkResult.canProceed) {
+      await UpgradePromptDialog.show(context, operationName: 'Extract Audio');
+      return;
+    }
+
+    // Operation will be recorded only on successful completion in JobService.markJobCompleted()
+
     final l10n = context.read<AppLocalizations>();
     final jobService = context.read<JobService>();
     final outputPath = await StorageService.getOutputFilePath('extracted', _format);
@@ -268,9 +282,31 @@ class _ExtractAudioScreenState extends State<ExtractAudioScreen> {
         final outputSize = await StorageService.getFileSize(outputPath);
         jobService.markJobCompleted(jobId, outputSize: outputSize);
       } else {
-        jobService.markJobFailed(jobId, result.error ?? 'Extraction failed');
+        final errorMsg = result.error ?? 'Extraction failed';
+        await LoggingService().logError(
+          'Audio extraction failed',
+          error: errorMsg,
+          operation: 'extract_audio',
+          context: {
+            'inputPath': inputPath,
+            'outputPath': outputPath,
+            'format': _format,
+            'bitrate': _bitrate,
+          },
+        );
+        jobService.markJobFailed(jobId, errorMsg);
       }
-    } catch (e) {
+    } catch (e, stackTrace) {
+      await LoggingService().logError(
+        'Audio extraction exception',
+        error: e,
+        stackTrace: stackTrace,
+        operation: 'extract_audio',
+        context: {
+          'inputPath': inputPath,
+          'outputPath': outputPath,
+        },
+      );
       jobService.markJobFailed(jobId, e.toString());
     }
   }

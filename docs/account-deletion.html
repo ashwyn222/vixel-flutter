@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Account &amp; Data Deletion - Vixel</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 40px 20px;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            padding: 48px;
+        }
+        .logo { text-align: center; margin-bottom: 32px; }
+        .logo h1 {
+            font-size: 48px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .logo p { color: #666; font-size: 14px; margin-top: 8px; }
+        h2 {
+            color: #333;
+            margin: 32px 0 16px 0;
+            padding-bottom: 8px;
+            border-bottom: 2px solid #667eea;
+        }
+        p { margin-bottom: 16px; color: #555; }
+        ol, ul { margin: 16px 0; padding-left: 24px; }
+        li { margin-bottom: 8px; color: #555; }
+        .highlight {
+            background: linear-gradient(135deg, #667eea20 0%, #764ba220 100%);
+            padding: 20px;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+            margin: 24px 0;
+        }
+        .highlight p { margin: 0; font-weight: 500; color: #333; }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 16px 0 24px 0;
+            font-size: 14px;
+        }
+        th, td {
+            text-align: left;
+            padding: 10px 12px;
+            border-bottom: 1px solid #eee;
+            vertical-align: top;
+        }
+        th { background: #f5f5fa; color: #333; }
+        a { color: #667eea; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        code { background: #f3f3f7; padding: 1px 6px; border-radius: 4px; font-size: 13px; }
+        .footer {
+            margin-top: 48px;
+            padding-top: 24px;
+            border-top: 1px solid #eee;
+            text-align: center;
+            color: #888;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="logo">
+            <h1>Vixel</h1>
+            <p>Account &amp; Data Deletion</p>
+        </div>
+
+        <p><strong>App:</strong> Vixel &mdash; Offline Video Editor</p>
+        <p><strong>Developer:</strong> Ashwin Kumar Sharma</p>
+        <p><strong>Contact:</strong> <a href="mailto:ashwyn222@gmail.com">ashwyn222@gmail.com</a></p>
+
+        <div class="highlight">
+            <p>You can delete your Vixel account and all associated data at any time, either from inside the app or by emailing us.</p>
+        </div>
+
+        <h2>Option 1: Delete from inside the app (recommended)</h2>
+        <ol>
+            <li>Open Vixel on your device.</li>
+            <li>Tap the <strong>Settings</strong> icon (top-right of the home screen).</li>
+            <li>Scroll to the <strong>Account</strong> section.</li>
+            <li>Tap <strong>Delete account</strong>.</li>
+            <li>Confirm the action when prompted.</li>
+        </ol>
+        <p>The deletion is performed immediately. You will be signed out and your account will no longer exist.</p>
+
+        <h2>Option 2: Email request (for users who have uninstalled the app)</h2>
+        <p>Send an email to <a href="mailto:ashwyn222@gmail.com?subject=Vixel%20account%20deletion%20request">ashwyn222@gmail.com</a> from the Google account you used to sign in to Vixel, with the subject line <em>"Vixel account deletion request"</em>.</p>
+        <p>We will verify the request and delete your account and associated data within <strong>30 days</strong>, and reply to confirm.</p>
+
+        <h2>What is deleted</h2>
+        <table>
+            <thead>
+                <tr><th>Data</th><th>Action</th></tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>Firebase Authentication user (your Vixel account, including the email and name we received from Google Sign-In)</td>
+                    <td>Permanently deleted</td>
+                </tr>
+                <tr>
+                    <td>Free-tier operation timestamps (<code>users/&lt;uid&gt;</code> in Cloud Firestore)</td>
+                    <td>Permanently deleted</td>
+                </tr>
+                <tr>
+                    <td>Diagnostic / error reports linked to your Firebase UID (<code>error_logs</code> in Cloud Firestore)</td>
+                    <td>Permanently deleted</td>
+                </tr>
+                <tr>
+                    <td>Local app data and cached files on your device</td>
+                    <td>Removed when you uninstall the app, or via your device's app-info screen</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <h2>What is kept (and for how long)</h2>
+        <table>
+            <thead>
+                <tr><th>Data</th><th>Retention</th><th>Reason</th></tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>Purchase &amp; subscription records held by Google Play</td>
+                    <td>As long as Google Play retains them</td>
+                    <td>Required by Google Play for receipts, refunds and tax compliance. Vixel does not store these records itself.</td>
+                </tr>
+                <tr>
+                    <td>Firebase / Google Cloud system logs (e.g. server access logs)</td>
+                    <td>Up to 30 days</td>
+                    <td>Routine operational logs maintained by Google. They are not used by Vixel.</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <p>For the full picture of what we collect and how it is used, see our <a href="privacy-policy.html">Privacy Policy</a>.</p>
+
+        <div class="footer">
+            <p>Last updated: April 27, 2026</p>
+            <p>Vixel &middot; <a href="privacy-policy.html">Privacy Policy</a></p>
+        </div>
+    </div>
+</body>
+</html>

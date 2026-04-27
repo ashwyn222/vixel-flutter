@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vixel Error Logs Viewer</title>
+    <link rel="stylesheet" href="style.css">
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+        import { getFirestore } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
+        import {
+            getAuth,
+            GoogleAuthProvider,
+            signInWithPopup,
+            signOut,
+            onAuthStateChanged,
+        } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
+
+        // Firebase configuration for Vixel project
+        const firebaseConfig = {
+            apiKey: "AIzaSyBcX-_GgElQWytm8_uGZBUH1o9sdPHXdtM",
+            authDomain: "vixel-18b4b.firebaseapp.com",
+            projectId: "vixel-18b4b",
+            storageBucket: "vixel-18b4b.firebasestorage.app",
+            messagingSenderId: "946439763516",
+            appId: "1:946439763516:web:fe9769cc723c5dc1a3b539"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        window.db = getFirestore(app);
+        window.auth = getAuth(app);
+        window.googleProvider = new GoogleAuthProvider();
+        window.signInWithPopup = signInWithPopup;
+        window.signOut = signOut;
+        window.onAuthStateChanged = onAuthStateChanged;
+    </script>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🔍 Vixel Error Logs Viewer</h1>
+            <div id="authBar" class="controls" style="margin-bottom: 8px;">
+                <span id="authStatus" style="margin-right: 8px;">Not signed in</span>
+                <button id="signInBtn" class="btn btn-primary">Sign in with Google</button>
+                <button id="signOutBtn" class="btn" style="display:none;">Sign out</button>
+            </div>
+            <div class="controls">
+                <button id="refreshBtn" class="btn btn-primary">Refresh</button>
+                <select id="filterLevel">
+                    <option value="all">All Levels</option>
+                    <option value="error">Errors Only</option>
+                    <option value="warning">Warnings Only</option>
+                </select>
+                <select id="filterOperation">
+                    <option value="all">All Operations</option>
+                    <option value="optimize_video">Optimize Video</option>
+                    <option value="cut_video">Cut Video</option>
+                    <option value="merge_videos">Merge Videos</option>
+                    <option value="extract_audio">Extract Audio</option>
+                    <option value="audio_on_video">Audio on Video</option>
+                    <option value="photos_to_video">Photos to Video</option>
+                    <option value="add_watermark">Add Watermark</option>
+                </select>
+                <input type="number" id="limitInput" placeholder="Limit" value="50" min="10" max="500">
+            </div>
+        </header>
+
+        <div id="loading" class="loading">Loading logs...</div>
+        <div id="error" class="error" style="display: none;"></div>
+        <div id="stats" class="stats"></div>
+        <div id="logsContainer" class="logs-container"></div>
+    </div>
+
+    <script src="app.js"></script>
+    <!-- Debug script - only loads when needed, doesn't auto-run -->
+    <script>
+        // Make checkFirestoreLogs available but don't auto-run
+        // Users can call it manually from console if needed
+        window.checkFirestoreLogs = async function() {
+            if (!window.db) {
+                console.error('Firebase not initialized. Make sure Firebase config is set in index.html.');
+                return;
+            }
+            
+            const { collection, getDocs, query, where, orderBy, limit } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js');
+            
+            console.log('🔍 Checking Firestore for error logs...\n');
+            
+            try {
+                const logsRef = collection(window.db, 'error_logs');
+                const allLogsSnapshot = await getDocs(logsRef);
+                console.log(`📊 Total logs in Firestore: ${allLogsSnapshot.size}`);
+                
+                const optimizeQuery = query(logsRef, where('operation', '==', 'optimize_video'), limit(10));
+                const optimizeSnapshot = await getDocs(optimizeQuery);
+                console.log(`🎬 Optimize video logs: ${optimizeSnapshot.size}`);
+                
+                const errorQuery = query(logsRef, where('level', '==', 'error'), limit(20));
+                const errorSnapshot = await getDocs(errorQuery);
+                console.log(`❌ Total error logs: ${errorSnapshot.size}\n`);
+            } catch (error) {
+                console.error('❌ Error querying Firestore:', error);
+            }
+        };
+    </script>
+</body>
+</html>

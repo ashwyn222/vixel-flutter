@@ -56,7 +56,7 @@ class Job {
   String get typeDisplayName {
     switch (type) {
       case JobType.compress:
-        return 'Compress';
+        return 'Optimize';
       case JobType.cut:
         return 'Cut';
       case JobType.merge:

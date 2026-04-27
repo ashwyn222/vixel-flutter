@@ -8,8 +8,11 @@ import '../services/ffmpeg_service.dart';
 import '../services/job_service.dart';
 import '../services/storage_service.dart';
 import '../services/file_picker_service.dart';
+import '../services/operation_tracker_service.dart';
+import '../services/logging_service.dart';
 import '../widgets/video_picker_card.dart';
 import '../widgets/settings_card.dart';
+import '../widgets/upgrade_prompt_dialog.dart';
 
 class AddWatermarkScreen extends StatefulWidget {
   const AddWatermarkScreen({super.key});
@@ -447,6 +450,17 @@ class _AddWatermarkScreenState extends State<AddWatermarkScreen> {
   Future<void> _addWatermark() async {
     if (!_canProcess) return;
 
+    // Check operation limit
+    final operationTracker = context.read<OperationTrackerService>();
+    final checkResult = operationTracker.checkOperation();
+    
+    if (!checkResult.canProceed) {
+      await UpgradePromptDialog.show(context, operationName: 'Add Watermark');
+      return;
+    }
+
+    // Operation will be recorded only on successful completion in JobService.markJobCompleted()
+
     final jobService = context.read<JobService>();
     final outputPath = await StorageService.getOutputFilePath('watermarked', 'mp4');
 
@@ -549,9 +563,35 @@ class _AddWatermarkScreenState extends State<AddWatermarkScreen> {
         final outputSize = await StorageService.getFileSize(outputPath);
         jobService.markJobCompleted(jobId, outputSize: outputSize);
       } else {
-        jobService.markJobFailed(jobId, result.error ?? 'Processing failed');
+        final errorMsg = result.error ?? 'Processing failed';
+        await LoggingService().logError(
+          'Add watermark failed',
+          error: errorMsg,
+          operation: 'add_watermark',
+          context: {
+            'videoPath': videoPath,
+            'outputPath': outputPath,
+            'watermarkType': watermarkType,
+            'position': position,
+            'opacity': opacity,
+            'scale': scale,
+            'durationType': durationType,
+          },
+        );
+        jobService.markJobFailed(jobId, errorMsg);
       }
-    } catch (e) {
+    } catch (e, stackTrace) {
+      await LoggingService().logError(
+        'Add watermark exception',
+        error: e,
+        stackTrace: stackTrace,
+        operation: 'add_watermark',
+        context: {
+          'videoPath': videoPath,
+          'outputPath': outputPath,
+          'watermarkType': watermarkType,
+        },
+      );
       jobService.markJobFailed(jobId, e.toString());
     }
   }

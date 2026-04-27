@@ -1,0 +1,55 @@
+{
+  "project_info": {
+    "project_number": "946439763516",
+    "project_id": "vixel-18b4b",
+    "storage_bucket": "vixel-18b4b.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:946439763516:android:bf62eba383b06575a3b539",
+        "android_client_info": {
+          "package_name": "com.ashwinsharma.vixel"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "946439763516-0i3cstf19reivi8tvfu4ee1qrgqim0f3.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.ashwinsharma.vixel",
+            "certificate_hash": "7e1fb054f029df9c93d9e895d00caa0023985ad5"
+          }
+        },
+        {
+          "client_id": "946439763516-c6avhbr7ejdv4dcbt5eqh0dunin4tduj.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.ashwinsharma.vixel",
+            "certificate_hash": "25466aa1634adb4f5b0b4feed068ddab3acb4e0b"
+          }
+        },
+        {
+          "client_id": "946439763516-e5dpbkep4cq3ck86topuua949jfcd2ov.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDf1BojKw0Mh2fXPJGzhpYzs1fAQpZ2Xyg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "946439763516-e5dpbkep4cq3ck86topuua949jfcd2ov.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

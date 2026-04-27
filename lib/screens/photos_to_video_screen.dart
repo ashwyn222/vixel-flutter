@@ -8,6 +8,9 @@ import '../services/ffprobe_service.dart';
 import '../services/job_service.dart';
 import '../services/storage_service.dart';
 import '../services/file_picker_service.dart';
+import '../services/operation_tracker_service.dart';
+import '../services/logging_service.dart';
+import '../widgets/upgrade_prompt_dialog.dart';
 
 class PhotosToVideoScreen extends StatefulWidget {
   const PhotosToVideoScreen({super.key});
@@ -415,6 +418,17 @@ class _PhotosToVideoScreenState extends State<PhotosToVideoScreen> {
   Future<void> _createVideo() async {
     if (_photos.isEmpty) return;
 
+    // Check operation limit
+    final operationTracker = context.read<OperationTrackerService>();
+    final checkResult = operationTracker.checkOperation();
+    
+    if (!checkResult.canProceed) {
+      await UpgradePromptDialog.show(context, operationName: 'Photos to Video');
+      return;
+    }
+
+    // Operation will be recorded only on successful completion in JobService.markJobCompleted()
+
     final jobService = context.read<JobService>();
     final outputPath = await StorageService.getOutputFilePath('slideshow', 'mp4');
 
@@ -487,9 +501,30 @@ class _PhotosToVideoScreenState extends State<PhotosToVideoScreen> {
         final outputSize = await StorageService.getFileSize(outputPath);
         jobService.markJobCompleted(jobId, outputSize: outputSize);
       } else {
-        jobService.markJobFailed(jobId, result.error ?? 'Creation failed');
+        final errorMsg = result.error ?? 'Creation failed';
+        await LoggingService().logError(
+          'Photos to video failed',
+          error: errorMsg,
+          operation: 'photos_to_video',
+          context: {
+            'photoCount': imagePaths.length,
+            'outputPath': outputPath,
+            'hasAudio': audioPath != null,
+          },
+        );
+        jobService.markJobFailed(jobId, errorMsg);
       }
-    } catch (e) {
+    } catch (e, stackTrace) {
+      await LoggingService().logError(
+        'Photos to video exception',
+        error: e,
+        stackTrace: stackTrace,
+        operation: 'photos_to_video',
+        context: {
+          'photoCount': imagePaths.length,
+          'outputPath': outputPath,
+        },
+      );
       jobService.markJobFailed(jobId, e.toString());
     }
   }

@@ -9,8 +9,11 @@ import '../services/ffprobe_service.dart';
 import '../services/job_service.dart';
 import '../services/storage_service.dart';
 import '../services/file_picker_service.dart';
+import '../services/operation_tracker_service.dart';
+import '../services/logging_service.dart';
 import '../widgets/video_picker_card.dart';
 import '../widgets/settings_card.dart';
+import '../widgets/upgrade_prompt_dialog.dart';
 
 class AudioOnVideoScreen extends StatefulWidget {
   const AudioOnVideoScreen({super.key});
@@ -401,6 +404,17 @@ class _AudioOnVideoScreenState extends State<AudioOnVideoScreen> {
   Future<void> _addAudioToVideo() async {
     if (_selectedVideo == null || _selectedAudio == null || _audioFilePath == null) return;
 
+    // Check operation limit
+    final operationTracker = context.read<OperationTrackerService>();
+    final checkResult = operationTracker.checkOperation();
+    
+    if (!checkResult.canProceed) {
+      await UpgradePromptDialog.show(context, operationName: 'Audio on Video');
+      return;
+    }
+
+    // Operation will be recorded only on successful completion in JobService.markJobCompleted()
+
     final jobService = context.read<JobService>();
     final outputPath = await StorageService.getOutputFilePath('audio_mixed', 'mp4');
 
@@ -484,9 +498,33 @@ class _AudioOnVideoScreenState extends State<AudioOnVideoScreen> {
         final outputSize = await StorageService.getFileSize(outputPath);
         jobService.markJobCompleted(jobId, outputSize: outputSize);
       } else {
-        jobService.markJobFailed(jobId, result.error ?? 'Processing failed');
+        final errorMsg = result.error ?? 'Processing failed';
+        await LoggingService().logError(
+          'Audio on video failed',
+          error: errorMsg,
+          operation: 'audio_on_video',
+          context: {
+            'videoPath': videoPath,
+            'audioPath': audioPath,
+            'outputPath': outputPath,
+            'originalVolume': originalVolume,
+            'newAudioVolume': newAudioVolume,
+          },
+        );
+        jobService.markJobFailed(jobId, errorMsg);
       }
-    } catch (e) {
+    } catch (e, stackTrace) {
+      await LoggingService().logError(
+        'Audio on video exception',
+        error: e,
+        stackTrace: stackTrace,
+        operation: 'audio_on_video',
+        context: {
+          'videoPath': videoPath,
+          'audioPath': audioPath,
+          'outputPath': outputPath,
+        },
+      );
       jobService.markJobFailed(jobId, e.toString());
     }
   }

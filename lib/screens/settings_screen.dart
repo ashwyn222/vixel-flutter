@@ -5,6 +5,11 @@ import '../l10n/app_localizations.dart';
 import '../services/storage_service.dart';
 import '../services/job_service.dart';
 import '../services/file_picker_service.dart';
+import '../services/subscription_service.dart';
+import '../services/auth_service.dart';
+import '../services/logging_service.dart';
+import '../services/operation_tracker_service.dart';
+import 'subscription_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -54,7 +59,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Theme section - FIRST
+            // Account section - NEW
+            _AccountSection(theme: t, l10n: l10n),
+            SizedBox(height: 24),
+            
+            // Subscription section
+            _SubscriptionSection(theme: t, l10n: l10n),
+            SizedBox(height: 24),
+
+            // Privacy section
+            _PrivacySection(theme: t, l10n: l10n),
+            SizedBox(height: 24),
+            
+            // Theme section
             Text(
               l10n.tr('theme'),
               style: TextStyle(
@@ -121,50 +138,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
             SizedBox(height: 24),
 
-            // Language section - SECOND
-            Text(
-              l10n.tr('language'),
-              style: TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-                color: t.textMuted,
-                letterSpacing: 0.5,
-              ),
-            ),
-            SizedBox(height: 12),
-
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: t.cardBackground,
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [
-                  _LanguageOption(
-                    language: AppLanguage.english,
-                    label: 'English',
-                    flag: '🇬🇧',
-                    isSelected: l10n.currentLanguage == AppLanguage.english,
-                    onTap: () => l10n.setLanguage(AppLanguage.english),
-                    theme: t,
-                  ),
-                  SizedBox(width: 16),
-                  _LanguageOption(
-                    language: AppLanguage.hindi,
-                    label: 'हिंदी',
-                    flag: '🇮🇳',
-                    isSelected: l10n.currentLanguage == AppLanguage.hindi,
-                    onTap: () => l10n.setLanguage(AppLanguage.hindi),
-                    theme: t,
-                  ),
-                ],
-              ),
-            ),
-
-            SizedBox(height: 24),
-
             // File Picker section
             Text(
               l10n.tr('file_picker'),
@@ -192,12 +165,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                         children: [
                           _PickerOption(
-                            type: PickerType.system,
-                            label: l10n.tr('picker_system'),
-                            description: l10n.tr('picker_system_desc'),
+                            type: PickerType.files,
+                            label: l10n.tr('picker_files'),
+                            description: l10n.tr('picker_files_desc'),
                             icon: Icons.folder_open,
-                            isSelected: pickerService.pickerType == PickerType.system,
-                            onTap: () => pickerService.setPickerType(PickerType.system),
+                            isSelected: pickerService.pickerType == PickerType.files,
+                            onTap: () => pickerService.setPickerType(PickerType.files),
                             theme: t,
                           ),
                           SizedBox(width: 12),
@@ -477,69 +450,340 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 }
 
-class _LanguageOption extends StatelessWidget {
-  final AppLanguage language;
-  final String label;
-  final String flag;
-  final bool isSelected;
-  final VoidCallback onTap;
+class _AccountSection extends StatelessWidget {
   final AppThemeData theme;
+  final AppLocalizations l10n;
 
-  const _LanguageOption({
-    required this.language,
-    required this.label,
-    required this.flag,
-    required this.isSelected,
-    required this.onTap,
+  const _AccountSection({
     required this.theme,
+    required this.l10n,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Expanded(
-      child: GestureDetector(
-        onTap: onTap,
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
-          decoration: BoxDecoration(
-            color: isSelected ? theme.primary.withAlpha(26) : theme.surfaceVariant,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: isSelected ? theme.primary : Colors.transparent,
-              width: 2,
-            ),
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                flag,
-                style: TextStyle(fontSize: 18),
-              ),
-              SizedBox(width: 6),
-              Flexible(
-                child: Text(
-                  label,
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-                    color: isSelected ? theme.primary : theme.textSecondary,
-                  ),
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-              if (isSelected) ...[
-                SizedBox(width: 4),
-                Icon(
-                  Icons.check_circle,
-                  size: 16,
-                  color: theme.primary,
-                ),
-              ],
-            ],
+    final authService = context.watch<AuthService>();
+    final isSignedIn = authService.isSignedIn;
+    final isLoading = authService.isLoading;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          l10n.tr('account'),
+          style: TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.w600,
+            color: theme.textMuted,
+            letterSpacing: 0.5,
           ),
         ),
+        SizedBox(height: 12),
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: theme.cardBackground,
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: isSignedIn
+              ? _buildSignedInView(context, authService)
+              : _buildSignedOutView(context, authService, isLoading),
+        ),
+        if (!isSignedIn)
+          Padding(
+            padding: const EdgeInsets.only(top: 8),
+            child: Text(
+              l10n.tr('sign_in_benefit'),
+              style: TextStyle(
+                fontSize: 11,
+                color: theme.textMuted,
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+
+  Widget _buildSignedInView(BuildContext context, AuthService authService) {
+    return Column(
+      children: [
+        Row(
+          children: [
+            // User avatar
+            Container(
+              width: 48,
+              height: 48,
+              decoration: BoxDecoration(
+                color: theme.primary.withAlpha(51),
+                borderRadius: BorderRadius.circular(24),
+              ),
+              child: authService.photoUrl != null
+                  ? ClipRRect(
+                      borderRadius: BorderRadius.circular(24),
+                      child: Image.network(
+                        authService.photoUrl!,
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, __, ___) => Icon(
+                          Icons.person,
+                          color: theme.primary,
+                          size: 24,
+                        ),
+                      ),
+                    )
+                  : Icon(
+                      Icons.person,
+                      color: theme.primary,
+                      size: 24,
+                    ),
+            ),
+            SizedBox(width: 14),
+            // User info
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    authService.displayName ?? l10n.tr('user'),
+                    style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                      color: theme.textPrimary,
+                    ),
+                  ),
+                  if (authService.userEmail != null)
+                    Text(
+                      authService.userEmail!,
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: theme.textMuted,
+                      ),
+                    ),
+                  SizedBox(height: 4),
+                  Row(
+                    children: [
+                      Icon(Icons.cloud_done, size: 12, color: theme.success),
+                      SizedBox(width: 4),
+                      Text(
+                        l10n.tr('synced'),
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: theme.success,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            // Sign out button
+            IconButton(
+              onPressed: () => _showSignOutConfirmation(context, authService),
+              icon: Icon(Icons.logout, color: theme.textMuted),
+              tooltip: l10n.tr('sign_out'),
+            ),
+          ],
+        ),
+        SizedBox(height: 12),
+        Divider(color: theme.surfaceVariant, height: 1),
+        SizedBox(height: 8),
+        // Delete account row
+        InkWell(
+          onTap: () => _showDeleteAccountConfirmation(context, authService),
+          borderRadius: BorderRadius.circular(12),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 10),
+            child: Row(
+              children: [
+                Icon(Icons.delete_forever, size: 20, color: theme.error),
+                SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        l10n.tr('delete_account'),
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: theme.error,
+                        ),
+                      ),
+                      Text(
+                        l10n.tr('delete_account_desc'),
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: theme.textMuted,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Icon(Icons.chevron_right, size: 18, color: theme.textMuted),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  void _showDeleteAccountConfirmation(
+    BuildContext context,
+    AuthService authService,
+  ) {
+    showDialog<void>(
+      context: context,
+      builder: (dialogCtx) => AlertDialog(
+        backgroundColor: theme.cardBackground,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Text(
+          l10n.tr('delete_account_title'),
+          style: TextStyle(color: theme.textPrimary),
+        ),
+        content: Text(
+          l10n.tr('delete_account_message'),
+          style: TextStyle(color: theme.textSecondary),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogCtx),
+            child: Text(l10n.tr('cancel'), style: TextStyle(color: theme.textMuted)),
+          ),
+          TextButton(
+            onPressed: () async {
+              Navigator.pop(dialogCtx);
+              await _runDeleteAccount(context, authService);
+            },
+            style: TextButton.styleFrom(foregroundColor: theme.error),
+            child: Text(l10n.tr('delete')),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _runDeleteAccount(
+    BuildContext context,
+    AuthService authService,
+  ) async {
+    final uid = authService.userId ?? '';
+    final messenger = ScaffoldMessenger.of(context);
+    final operationTracker = context.read<OperationTrackerService>();
+    final loggingService = context.read<LoggingService>();
+
+    if (uid.isNotEmpty) {
+      // Best-effort cleanup of cloud data while we still hold a valid token.
+      await operationTracker.deleteCloudData(uid);
+      await loggingService.deleteUserLogs(uid);
+    }
+
+    final ok = await authService.deleteAccount();
+
+    messenger.showSnackBar(
+      SnackBar(
+        content: Text(
+          ok ? l10n.tr('account_deleted') : l10n.tr('delete_account_failed'),
+        ),
+        backgroundColor: ok ? theme.success : theme.error,
+      ),
+    );
+    // On success, the auth state listener in main.dart automatically navigates
+    // back to the SignInScreen.
+  }
+
+  Widget _buildSignedOutView(BuildContext context, AuthService authService, bool isLoading) {
+    return GestureDetector(
+      onTap: isLoading ? null : () => authService.signInWithGoogle(),
+      child: Row(
+        children: [
+          // Google icon
+          Container(
+            width: 48,
+            height: 48,
+            padding: EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: Colors.grey.shade300),
+            ),
+            child: Image.network(
+              'https://www.google.com/favicon.ico',
+              errorBuilder: (_, __, ___) => Icon(
+                Icons.g_mobiledata,
+                color: Colors.red,
+                size: 24,
+              ),
+            ),
+          ),
+          SizedBox(width: 14),
+          // Sign in text
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  l10n.tr('sign_in_with_google'),
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                    color: theme.textPrimary,
+                  ),
+                ),
+                Text(
+                  l10n.tr('sync_across_devices'),
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: theme.textMuted,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          // Arrow or loading
+          if (isLoading)
+            SizedBox(
+              width: 24,
+              height: 24,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                color: theme.primary,
+              ),
+            )
+          else
+            Icon(Icons.chevron_right, color: theme.textMuted),
+        ],
+      ),
+    );
+  }
+
+  void _showSignOutConfirmation(BuildContext context, AuthService authService) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: theme.cardBackground,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Text(
+          l10n.tr('sign_out'),
+          style: TextStyle(color: theme.textPrimary),
+        ),
+        content: Text(
+          l10n.tr('sign_out_message'),
+          style: TextStyle(color: theme.textSecondary),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(l10n.tr('cancel'), style: TextStyle(color: theme.textMuted)),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              authService.signOut();
+            },
+            style: TextButton.styleFrom(foregroundColor: theme.error),
+            child: Text(l10n.tr('sign_out')),
+          ),
+        ],
       ),
     );
   }
@@ -806,6 +1050,206 @@ class _ActionButton extends StatelessWidget {
                 ],
               ),
       ),
+    );
+  }
+}
+
+class _PrivacySection extends StatelessWidget {
+  final AppThemeData theme;
+  final AppLocalizations l10n;
+
+  const _PrivacySection({required this.theme, required this.l10n});
+
+  @override
+  Widget build(BuildContext context) {
+    final logging = context.watch<LoggingService>();
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          l10n.tr('privacy'),
+          style: TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.w600,
+            color: theme.textMuted,
+            letterSpacing: 0.5,
+          ),
+        ),
+        SizedBox(height: 12),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          decoration: BoxDecoration(
+            color: theme.cardBackground,
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Row(
+            children: [
+              Icon(Icons.bug_report_outlined, size: 20, color: theme.textMuted),
+              SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      l10n.tr('send_error_reports'),
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                        color: theme.textPrimary,
+                      ),
+                    ),
+                    Text(
+                      l10n.tr('send_error_reports_desc'),
+                      style: TextStyle(fontSize: 11, color: theme.textMuted),
+                    ),
+                  ],
+                ),
+              ),
+              Switch(
+                value: logging.enableRemoteLogging,
+                activeColor: theme.primary,
+                onChanged: (v) => logging.setEnableRemoteLogging(v),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _SubscriptionSection extends StatelessWidget {
+  final AppThemeData theme;
+  final AppLocalizations l10n;
+
+  const _SubscriptionSection({
+    required this.theme,
+    required this.l10n,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final subscriptionService = context.watch<SubscriptionService>();
+    final isPro = subscriptionService.isPro;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          l10n.tr('subscription'),
+          style: TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.w600,
+            color: theme.textMuted,
+            letterSpacing: 0.5,
+          ),
+        ),
+        SizedBox(height: 12),
+        GestureDetector(
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const SubscriptionScreen()),
+            );
+          },
+          child: Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              gradient: isPro
+                  ? LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        Color(0xFFFFD700).withAlpha(51),
+                        Color(0xFFFFA500).withAlpha(51),
+                      ],
+                    )
+                  : null,
+              color: isPro ? null : theme.cardBackground,
+              borderRadius: BorderRadius.circular(16),
+              border: isPro
+                  ? Border.all(color: Color(0xFFFFD700).withAlpha(128))
+                  : null,
+            ),
+            child: Row(
+              children: [
+                Container(
+                  width: 48,
+                  height: 48,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [Color(0xFFFFD700), Color(0xFFFFA500)],
+                    ),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(
+                    Icons.workspace_premium,
+                    color: Colors.white,
+                    size: 24,
+                  ),
+                ),
+                SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Text(
+                            l10n.tr('vixel_pro'),
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                              color: theme.textPrimary,
+                            ),
+                          ),
+                          if (isPro) ...[
+                            SizedBox(width: 8),
+                            Container(
+                              padding: EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 2,
+                              ),
+                              decoration: BoxDecoration(
+                                color: theme.success,
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Text(
+                                l10n.tr('active').toUpperCase(),
+                                style: TextStyle(
+                                  fontSize: 9,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                      SizedBox(height: 2),
+                      Text(
+                        isPro
+                            ? '${subscriptionService.daysRemaining} ${l10n.tr('days_left')}'
+                            : l10n.tr('upgrade_to_unlock'),
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: theme.textMuted,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Icon(
+                  Icons.chevron_right,
+                  color: theme.textMuted,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

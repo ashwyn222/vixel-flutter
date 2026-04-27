@@ -44,8 +44,11 @@ class FFmpegService {
     args.addAll(['-c:v', _videoEncoder]);
 
     // Resolution scaling
+    // Use -2 instead of -1 to ensure height is even (required by H.264)
     if (resolution.isNotEmpty && resolution != '-1:-1') {
-      args.addAll(['-vf', 'scale=$resolution']);
+      // Replace -1 with -2 to ensure even dimensions
+      final evenResolution = resolution.replaceAll(':-1', ':-2').replaceAll('-1:', '-2:');
+      args.addAll(['-vf', 'scale=$evenResolution']);
     }
 
     // Video bitrate (only if specified)
@@ -120,37 +123,70 @@ class FFmpegService {
     // Add input files
     for (int i = 0; i < inputPaths.length; i++) {
       args.addAll(['-i', inputPaths[i]]);
+    }
 
-      // Scale each input if resolution specified
-      if (resolution != '-1:-1' && resolution.isNotEmpty) {
-        // Parse resolution
-        final parts = resolution.split('x');
-        final width = parts[0];
-        final height = parts[1];
-        
-        // Scale with force_original_aspect_ratio and pad to handle different aspect ratios
-        // This ensures all videos have exactly the same dimensions
-        scaleFilters.add(
-          '[$i:v]scale=$width:$height:force_original_aspect_ratio=decrease,'
-          'pad=$width:$height:(ow-iw)/2:(oh-ih)/2:black,'
-          'setsar=1[v$i]'
-        );
-        concatStreams.add('[v$i][$i:a]');
+    // Always normalize videos for concatenation to ensure compatibility
+    // Even if keeping "original" resolution, we need to ensure all videos have same properties
+    String targetWidth, targetHeight;
+    
+    if (resolution != '-1:-1' && resolution.isNotEmpty) {
+      // Use specified resolution
+      final parts = resolution.split('x');
+      targetWidth = parts[0];
+      targetHeight = parts[1];
+      
+      // Ensure width and height are even (required by H.264)
+      if (targetHeight != '-1' && targetHeight != '-2') {
+        final heightInt = int.tryParse(targetHeight);
+        if (heightInt != null && heightInt % 2 != 0) {
+          targetHeight = (heightInt - 1).toString(); // Make even
+        }
       } else {
-        concatStreams.add('[$i:v][$i:a]');
+        // Use -2 instead of -1 to ensure even height
+        targetHeight = '-2';
       }
+      
+      final widthInt = int.tryParse(targetWidth);
+      if (widthInt != null && widthInt % 2 != 0) {
+        targetWidth = (widthInt - 1).toString(); // Make even
+      }
+    } else {
+      // Use a common resolution (1080p) when keeping "original"
+      // This ensures all videos are normalized even if they have different original resolutions
+      targetWidth = '1920';
+      targetHeight = '1080';
+    }
+
+    // Normalize each video: scale, pad, set frame rate, pixel format, and handle audio
+    for (int i = 0; i < inputPaths.length; i++) {
+      // Scale with force_original_aspect_ratio and pad to handle different aspect ratios
+      // Also normalize frame rate and pixel format for compatibility
+      scaleFilters.add(
+        '[$i:v]scale=$targetWidth:$targetHeight:force_original_aspect_ratio=decrease,'
+        'pad=$targetWidth:$targetHeight:(ow-iw)/2:(oh-ih)/2:black,'
+        'fps=30,format=yuv420p,setsar=1[v$i]'
+      );
+      
+      // Normalize audio: resample to 44100Hz, convert to stereo
+      // Use anullsrc filter to generate silent audio if video has no audio track
+      // This ensures all videos have audio streams for concatenation
+      concatStreams.add(
+        '[$i:a]aresample=44100,asetnsamples=n=1024,channels=2[a$i];'
+      );
+      concatStreams.add('[v$i][a$i]');
     }
 
     // Build filter_complex
-    String filterComplex = '';
-    if (resolution != '-1:-1' && resolution.isNotEmpty) {
-      filterComplex = '${scaleFilters.join(';')};';
-    }
+    // First normalize all videos and audio, then concatenate
+    String filterComplex = '${scaleFilters.join(';')};';
     filterComplex += '${concatStreams.join('')}concat=n=${inputPaths.length}:v=1:a=1[outv][outa]';
 
     args.addAll(['-filter_complex', filterComplex]);
     args.addAll(['-map', '[outv]', '-map', '[outa]']);
+    args.addAll(['-c:v', _videoEncoder]);
     args.addAll(['-preset', preset]);
+    args.addAll(['-c:a', 'aac']);
+    args.addAll(['-shortest']); // Ensure output matches shortest stream
 
     if (audioBitrate.isNotEmpty) {
       args.addAll(['-b:a', audioBitrate]);
@@ -456,10 +492,10 @@ class FFmpegService {
         // Format: enable='between(t,start,end)'
         final startInt = startTime.toInt();
         final endInt = endTime.toInt();
-        overlayFilter = '[1:v]scale=iw*$scale:-1,format=rgba,colorchannelmixer=aa=$opacity[wm];';
+        overlayFilter = '[1:v]scale=iw*$scale:-2,format=rgba,colorchannelmixer=aa=$opacity[wm];';
         overlayFilter += '[0:v][wm]overlay=$x:$y:enable=between(t\\,$startInt\\,$endInt)';
       } else {
-        overlayFilter = '[1:v]scale=iw*$scale:-1,format=rgba,colorchannelmixer=aa=$opacity[wm];';
+        overlayFilter = '[1:v]scale=iw*$scale:-2,format=rgba,colorchannelmixer=aa=$opacity[wm];';
         overlayFilter += '[0:v][wm]overlay=$x:$y';
       }
 

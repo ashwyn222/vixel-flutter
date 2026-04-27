@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Get Firebase Config Helper</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 { color: #333; }
+        .step {
+            margin: 20px 0;
+            padding: 15px;
+            background: #f9f9f9;
+            border-left: 4px solid #4a9eff;
+        }
+        code {
+            background: #f4f4f4;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+        }
+        .config-box {
+            background: #1a1a1a;
+            color: #0f0;
+            padding: 15px;
+            border-radius: 5px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            overflow-x: auto;
+            margin: 15px 0;
+        }
+        button {
+            background: #4a9eff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        button:hover {
+            background: #3a8eef;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 Firebase Config Helper</h1>
+        
+        <div class="step">
+            <h3>Step 1: Get Your Firebase Config</h3>
+            <p>1. Go to <a href="https://console.firebase.google.com/" target="_blank">Firebase Console</a></p>
+            <p>2. Select your project: <strong>vixel-18b4b</strong></p>
+            <p>3. Click ⚙️ <strong>Project Settings</strong></p>
+            <p>4. Scroll to <strong>"Your apps"</strong> section</p>
+            <p>5. If you see a <strong>Web app</strong> (</> icon), click it</p>
+            <p>6. If no Web app exists, click <strong>"Add app"</strong> → Select <strong>Web</strong></p>
+            <p>7. Copy the <code>firebaseConfig</code> object</p>
+        </div>
+
+        <div class="step">
+            <h3>Step 2: Paste Your Config Here</h3>
+            <textarea id="configInput" placeholder="Paste your firebaseConfig object here..." style="width: 100%; height: 150px; font-family: monospace; padding: 10px;"></textarea>
+            <br><br>
+            <button onclick="formatConfig()">Format & Copy</button>
+        </div>
+
+        <div class="step">
+            <h3>Step 3: Copy This Formatted Config</h3>
+            <div id="output" class="config-box" style="display: none;"></div>
+            <button id="copyBtn" onclick="copyConfig()" style="display: none;">Copy to Clipboard</button>
+        </div>
+
+        <div class="step">
+            <h3>Step 4: Update index.html</h3>
+            <p>1. Open <code>logs_viewer/index.html</code></p>
+            <p>2. Find the <code>firebaseConfig</code> object (around line 14)</p>
+            <p>3. Replace it with the formatted config from Step 3</p>
+            <p>4. Save the file</p>
+        </div>
+
+        <div class="step">
+            <h3>Step 5: Set Firestore Rules</h3>
+            <p>1. Go to <strong>Firestore Database → Rules</strong></p>
+            <p>2. Add this rule:</p>
+            <div class="config-box">
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /error_logs/{document} {
+      allow read, write: if true;
+    }
+  }
+}
+            </div>
+            <p>3. Click <strong>"Publish"</strong></p>
+        </div>
+    </div>
+
+    <script>
+        let formattedConfig = '';
+
+        function formatConfig() {
+            const input = document.getElementById('configInput').value.trim();
+            if (!input) {
+                alert('Please paste your Firebase config first!');
+                return;
+            }
+
+            try {
+                // Try to parse as JSON (remove const/var if present)
+                let cleaned = input.replace(/^(const|var|let)\s+firebaseConfig\s*=\s*/, '');
+                cleaned = cleaned.replace(/;?\s*$/, '');
+                
+                const config = JSON.parse(cleaned);
+                
+                formattedConfig = `const firebaseConfig = {
+            apiKey: "${config.apiKey}",
+            authDomain: "${config.authDomain}",
+            projectId: "${config.projectId}",
+            storageBucket: "${config.storageBucket}",
+            messagingSenderId: "${config.messagingSenderId}",
+            appId: "${config.appId}"
+        };`;
+
+                document.getElementById('output').textContent = formattedConfig;
+                document.getElementById('output').style.display = 'block';
+                document.getElementById('copyBtn').style.display = 'block';
+            } catch (e) {
+                alert('Error parsing config. Make sure you copied the complete firebaseConfig object.\n\nError: ' + e.message);
+            }
+        }
+
+        function copyConfig() {
+            const textarea = document.createElement('textarea');
+            textarea.value = formattedConfig;
+            document.body.appendChild(textarea);
+            textarea.select();
+            document.execCommand('copy');
+            document.body.removeChild(textarea);
+            alert('Config copied to clipboard! Now paste it into index.html');
+        }
+    </script>
+</body>
+</html>

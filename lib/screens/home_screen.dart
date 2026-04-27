@@ -4,6 +4,9 @@ import 'package:google_fonts/google_fonts.dart';
 import '../theme/app_theme.dart';
 import '../l10n/app_localizations.dart';
 import '../services/job_service.dart';
+import '../services/subscription_service.dart';
+import '../services/operation_tracker_service.dart';
+import '../services/update_service.dart';
 import 'compress_video_screen.dart';
 import 'cut_video_screen.dart';
 import 'merge_videos_screen.dart';
@@ -14,15 +17,38 @@ import 'add_watermark_screen.dart';
 import 'play_video_screen.dart';
 import 'records_screen.dart';
 import 'settings_screen.dart';
+import 'subscription_screen.dart';
 
-class HomeScreen extends StatelessWidget {
+class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
+
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+  final UpdateService _updateService = UpdateService();
+
+  @override
+  void initState() {
+    super.initState();
+    // Check for updates after the first frame is rendered
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _checkForUpdates();
+    });
+  }
+
+  Future<void> _checkForUpdates() async {
+    await _updateService.checkAndPromptUpdate(context);
+  }
 
   @override
   Widget build(BuildContext context) {
     final theme = context.watch<AppTheme>();
     final t = theme.currentThemeData;
     final l10n = context.watch<AppLocalizations>();
+    final subscriptionService = context.watch<SubscriptionService>();
+    final operationTracker = context.watch<OperationTrackerService>();
     
     return Scaffold(
       backgroundColor: t.background,
@@ -36,14 +62,38 @@ class HomeScreen extends StatelessWidget {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text(
-                      'Vixel',
-                      style: GoogleFonts.pacifico(
-                        fontSize: 28,
-                        fontWeight: FontWeight.w400,
-                        color: t.textPrimary,
-                        letterSpacing: 1,
-                      ),
+                    Row(
+                      children: [
+                        Text(
+                          'Vixel',
+                          style: GoogleFonts.pacifico(
+                            fontSize: 28,
+                            fontWeight: FontWeight.w400,
+                            color: t.textPrimary,
+                            letterSpacing: 1,
+                          ),
+                        ),
+                        if (subscriptionService.isPro) ...[
+                          SizedBox(width: 8),
+                          Container(
+                            padding: EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                colors: [Color(0xFFFFD700), Color(0xFFFFA500)],
+                              ),
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: Text(
+                              'PRO',
+                              style: TextStyle(
+                                fontSize: 10,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.black,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ],
                     ),
                     IconButton(
                       onPressed: () => _navigateTo(context, const SettingsScreen()),
@@ -55,6 +105,17 @@ class HomeScreen extends StatelessWidget {
                 ),
               ),
             ),
+            
+            // Operations remaining banner (for free users)
+            if (!subscriptionService.isPro)
+              SliverToBoxAdapter(
+                child: _OperationsBanner(
+                  tracker: operationTracker,
+                  theme: t,
+                  l10n: l10n,
+                  onUpgrade: () => _navigateTo(context, const SubscriptionScreen()),
+                ),
+              ),
 
             // Records & Play Video cards
             SliverToBoxAdapter(
@@ -427,6 +488,136 @@ class _FeatureCard extends StatelessWidget {
               textAlign: TextAlign.center,
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+class _OperationsBanner extends StatelessWidget {
+  final OperationTrackerService tracker;
+  final AppThemeData theme;
+  final AppLocalizations l10n;
+  final VoidCallback onUpgrade;
+
+  const _OperationsBanner({
+    required this.tracker,
+    required this.theme,
+    required this.l10n,
+    required this.onUpgrade,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final remaining = tracker.remainingOperations;
+    final isAtLimit = remaining <= 0;
+    
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
+      child: GestureDetector(
+        onTap: onUpgrade,
+        child: Container(
+          padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          decoration: BoxDecoration(
+            color: isAtLimit 
+                ? theme.error.withAlpha(26) 
+                : theme.primary.withAlpha(26),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: isAtLimit 
+                  ? theme.error.withAlpha(77) 
+                  : theme.primary.withAlpha(77),
+            ),
+          ),
+          child: Row(
+            children: [
+              // Operations count
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: isAtLimit ? theme.error : theme.primary,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Center(
+                  child: Text(
+                    '$remaining',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+              ),
+              SizedBox(width: 12),
+              
+              // Text
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      isAtLimit 
+                          ? l10n.tr('daily_limit_reached')
+                          : '$remaining ${l10n.tr('operations_remaining')}',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: isAtLimit ? theme.error : theme.textPrimary,
+                      ),
+                    ),
+                    if (isAtLimit && tracker.timeUntilNextOperation != null)
+                      Text(
+                        '${l10n.tr('next_operation_in')} ${tracker.timeUntilNextOperationFormatted}',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: theme.textMuted,
+                        ),
+                      )
+                    else
+                      Text(
+                        l10n.tr('free_tier'),
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: theme.textMuted,
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+              
+              // Upgrade button
+              Container(
+                padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [Color(0xFFFFD700), Color(0xFFFFA500)],
+                  ),
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.workspace_premium,
+                      size: 14,
+                      color: Colors.black,
+                    ),
+                    SizedBox(width: 4),
+                    Text(
+                      'PRO',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

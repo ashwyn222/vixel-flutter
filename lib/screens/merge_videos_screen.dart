@@ -9,7 +9,10 @@ import '../services/ffprobe_service.dart';
 import '../services/job_service.dart';
 import '../services/storage_service.dart';
 import '../services/file_picker_service.dart';
+import '../services/operation_tracker_service.dart';
+import '../services/logging_service.dart';
 import '../widgets/settings_card.dart';
+import '../widgets/upgrade_prompt_dialog.dart';
 
 class MergeVideosScreen extends StatefulWidget {
   const MergeVideosScreen({super.key});
@@ -116,15 +119,14 @@ class _MergeVideosScreenState extends State<MergeVideosScreen> {
     if (_videos.isEmpty) return false;
     
     // Disable "Original" when videos have different resolutions
+    // (because we can't keep "original" if they're different)
     if (optionValue == '-1:-1') {
       return !_allSameResolution;
     }
     
-    final optionWidth = _getResolutionWidth(optionValue);
-    final minWidth = _minVideoWidth;
-    
-    if (optionWidth == null || minWidth == null) return false;
-    return optionWidth > minWidth;
+    // Allow all other resolutions - FFmpeg can scale up or down as needed
+    // The merge function will normalize all videos to the selected resolution
+    return false;
   }
 
   // Check if video bitrate option should be disabled
@@ -505,6 +507,17 @@ class _MergeVideosScreenState extends State<MergeVideosScreen> {
   Future<void> _mergeVideos() async {
     if (_videos.length < 2) return;
 
+    // Check operation limit
+    final operationTracker = context.read<OperationTrackerService>();
+    final checkResult = operationTracker.checkOperation();
+    
+    if (!checkResult.canProceed) {
+      await UpgradePromptDialog.show(context, operationName: 'Merge');
+      return;
+    }
+
+    // Operation will be recorded only on successful completion in JobService.markJobCompleted()
+
     final jobService = context.read<JobService>();
     final outputPath = await StorageService.getOutputFilePath('merged', 'mp4');
     final inputPaths = _videos.map((v) => v.file.path).toList();
@@ -570,9 +583,29 @@ class _MergeVideosScreenState extends State<MergeVideosScreen> {
         final outputSize = await StorageService.getFileSize(outputPath);
         jobService.markJobCompleted(jobId, outputSize: outputSize);
       } else {
-        jobService.markJobFailed(jobId, result.error ?? 'Merge failed');
+        final errorMsg = result.error ?? 'Merge failed';
+        await LoggingService().logError(
+          'Video merge failed',
+          error: errorMsg,
+          operation: 'merge_videos',
+          context: {
+            'videoCount': inputPaths.length,
+            'outputPath': outputPath,
+          },
+        );
+        jobService.markJobFailed(jobId, errorMsg);
       }
-    } catch (e) {
+    } catch (e, stackTrace) {
+      await LoggingService().logError(
+        'Video merge exception',
+        error: e,
+        stackTrace: stackTrace,
+        operation: 'merge_videos',
+        context: {
+          'videoCount': inputPaths.length,
+          'outputPath': outputPath,
+        },
+      );
       jobService.markJobFailed(jobId, e.toString());
     }
   }

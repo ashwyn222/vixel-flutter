@@ -397,23 +397,23 @@ Error: ${job.error}
     }
   }
 
-  /// Get the subfolder name for Android intent based on job type (Hindi)
+  /// Get the subfolder name for Android intent based on job type
   String _getSubfolderForJobType() {
     switch (job.type) {
       case JobType.compress:
-        return 'संपीड़ित';           // Compressed
+        return 'Compressed';
       case JobType.cut:
-        return 'कटा_हुआ';           // Cut
+        return 'Cut';
       case JobType.merge:
-        return 'जोड़ा_गया';          // Merged
+        return 'Merged';
       case JobType.extractAudio:
-        return 'ऑडियो_निकाला';       // Extracted Audio
+        return 'ExtractedAudio';
       case JobType.audioOnVideo:
-        return 'वीडियो_पर_ऑडियो';    // Audio on Video
+        return 'AudioOnVideo';
       case JobType.photosToVideo:
-        return 'फोटो_से_वीडियो';      // Photos to Video
+        return 'Slideshow';
       case JobType.addWatermark:
-        return 'वॉटरमार्क';          // Watermarked
+        return 'Watermarked';
     }
   }
 
