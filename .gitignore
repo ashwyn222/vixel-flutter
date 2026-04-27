@@ -50,6 +50,11 @@ app.*.map.json
 *.keystore
 android/key.properties
 
+# Secrets - DO NOT commit these!
+.env
+.env.*
+!.env.example
+
 # Debug info from obfuscation
 build/debug-info/
 *.aab
